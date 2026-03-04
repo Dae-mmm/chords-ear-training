@@ -39,12 +39,22 @@
     const Flame = (props) => <Icon {...props}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></Icon>;
     const Star = (props) => <Icon {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></Icon>;
     const Trophy = (props) => <Icon {...props}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></Icon>;
+    // Nuove Icone per lo scorrimento
+    const ChevronLeft = (props) => <Icon {...props}><polyline points="15 18 9 12 15 6" /></Icon>;
+    const ChevronRight = (props) => <Icon {...props}><polyline points="9 18 15 12 9 6" /></Icon>;
 
     // Frequenze delle note per l'AudioContext
     const FREQUENCIES = {
       'C4': 261.63, 'Db4': 277.18, 'D4': 293.66, 'Eb4': 311.13, 'E4': 329.63, 'F4': 349.23, 'Gb4': 369.99, 'G4': 392.00, 'Ab4': 415.30, 'A4': 440.00, 'Bb4': 466.16, 'B4': 493.88,
       'C5': 523.25, 'Db5': 554.37, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25, 'F5': 698.46, 'Gb5': 739.99, 'G5': 783.99, 'Ab5': 830.61, 'A5': 880.00, 'Bb5': 932.33, 'B5': 987.77
     };
+
+    // Nomi degli intervalli per la generazione automatica (da 1 a 12 semitoni)
+    const INTERVAL_NAMES = [
+      "Unisono", "Seconda Minore", "Seconda Maggiore", "Terza Minore", "Terza Maggiore",
+      "Quarta Giusta", "Tritono", "Quinta Giusta", "Sesta Minore", "Sesta Maggiore",
+      "Settima Minore", "Settima Maggiore", "Ottava Giusta"
+    ];
 
     // Layout della tastiera (2 ottave)
     const PIANO_KEYS = [
@@ -64,123 +74,46 @@
       { id: 'B5', type: 'white', label: 'Si' }
     ];
 
-    // Catalogo degli accordi
+    // Catalogo degli accordi statici (Principiante e Intermedio ora sono generativi)
     const CHORD_CATEGORIES = {
-      'Principiante': [
-        { name: 'Do Maggiore', notes: ['C4', 'E4', 'G4'] },
-        { name: 'Sol Maggiore', notes: ['G4', 'B4', 'D5'] },
-        { name: 'Re Maggiore', notes: ['D4', 'Gb4', 'A4'] },
-        { name: 'La Maggiore', notes: ['A4', 'Db5', 'E5'] },
-        { name: 'Mi Maggiore', notes: ['E4', 'Ab4', 'B4'] },
-        { name: 'Fa Maggiore', notes: ['F4', 'A4', 'C5'] },
-        { name: 'Sib Maggiore', notes: ['Bb4', 'D5', 'F5'] },
-        { name: 'Mib Maggiore', notes: ['Eb4', 'G4', 'Bb4'] },
-        { name: 'Do# Maggiore', notes: ['Db4', 'F4', 'Ab4'] },
-        { name: 'Lab Maggiore', notes: ['Ab4', 'C5', 'Eb5'] },
-        { name: 'Si Maggiore', notes: ['B4', 'Eb5', 'Gb5'] },
-        { name: 'La Minore', notes: ['A4', 'C5', 'E5'] },
-        { name: 'Mi Minore', notes: ['E4', 'G4', 'B4'] },
-        { name: 'Si Minore', notes: ['B4', 'D5', 'Gb5'] },
-        { name: 'Fa# Minore', notes: ['Gb4', 'A4', 'Db5'] },
-        { name: 'Do# Minore', notes: ['Db4', 'E4', 'Ab4'] },
-        { name: 'Re Minore', notes: ['D4', 'F4', 'A4'] },
-        { name: 'Sol Minore', notes: ['G4', 'Bb4', 'D5'] },
-        { name: 'Do Minore', notes: ['C4', 'Eb4', 'G4'] },
-        { name: 'Sol# Minore', notes: ['Ab4', 'B4', 'Eb5'] },
+      'Avanzato': [
+        { name: 'Do Maggiore', notes: ['C4', 'E4', 'G4'] }, { name: 'Sol Maggiore', notes: ['G4', 'B4', 'D5'] },
+        { name: 'Re Maggiore', notes: ['D4', 'Gb4', 'A4'] }, { name: 'La Maggiore', notes: ['A4', 'Db5', 'E5'] },
+        { name: 'Mi Maggiore', notes: ['E4', 'Ab4', 'B4'] }, { name: 'Fa Maggiore', notes: ['F4', 'A4', 'C5'] },
+        { name: 'Sib Maggiore', notes: ['Bb4', 'D5', 'F5'] }, { name: 'Mib Maggiore', notes: ['Eb4', 'G4', 'Bb4'] },
+        { name: 'Do# Maggiore', notes: ['Db4', 'F4', 'Ab4'] }, { name: 'Lab Maggiore', notes: ['Ab4', 'C5', 'Eb5'] },
+        { name: 'Si Maggiore', notes: ['B4', 'Eb5', 'Gb5'] }, { name: 'La Minore', notes: ['A4', 'C5', 'E5'] },
+        { name: 'Mi Minore', notes: ['E4', 'G4', 'B4'] }, { name: 'Si Minore', notes: ['B4', 'D5', 'Gb5'] },
+        { name: 'Fa# Minore', notes: ['Gb4', 'A4', 'Db5'] }, { name: 'Do# Minore', notes: ['Db4', 'E4', 'Ab4'] },
+        { name: 'Re Minore', notes: ['D4', 'F4', 'A4'] }, { name: 'Sol Minore', notes: ['G4', 'Bb4', 'D5'] },
+        { name: 'Do Minore', notes: ['C4', 'Eb4', 'G4'] }, { name: 'Sol# Minore', notes: ['Ab4', 'B4', 'Eb5'] },
         { name: 'Sib Minore', notes: ['Bb4', 'Db5', 'F5'] }
       ],
-      'Intermedio': [
-        { name: 'Do sus4', notes: ['C4', 'F4', 'G4'] },
-        { name: 'Re sus4', notes: ['D4', 'G4', 'A4'] },
-        { name: 'Mi sus4', notes: ['E4', 'A4', 'B4'] },
-        { name: 'Fa# sus4', notes: ['Gb4', 'B4', 'Db5'] },
-        { name: 'Sol sus4', notes: ['G4', 'C5', 'D5'] },
-        { name: 'La sus4', notes: ['A4', 'D5', 'E5'] },
-        { name: 'Si sus4', notes: ['B4', 'E5', 'Gb5'] },
-        { name: 'Do sus2', notes: ['C4', 'D4', 'G4'] },
-        { name: 'Re sus2', notes: ['D4', 'E4', 'A4'] },
-        { name: 'Fa sus2', notes: ['F4', 'G4', 'C5'] },
-        { name: 'Sol sus2', notes: ['G4', 'A4', 'D5'] },
-        { name: 'La sus2', notes: ['A4', 'B4', 'E5'] },
-        { name: 'Do Aumentato', notes: ['C4', 'E4', 'Ab4'] },
-        { name: 'Mib Aumentato', notes: ['Eb4', 'G4', 'B4'] },
-        { name: 'Fa Aumentato', notes: ['F4', 'A4', 'Db5'] },
-        { name: 'Sol Aumentato', notes: ['G4', 'B4', 'Eb5'] },
-        { name: 'La Aumentato', notes: ['A4', 'Db5', 'F5'] },
-        { name: 'Re Diminuito', notes: ['D4', 'F4', 'Ab4'] },
-        { name: 'Mi Diminuito', notes: ['E4', 'G4', 'Bb4'] },
-        { name: 'Fa# Diminuito', notes: ['Gb4', 'A4', 'C5'] },
-        { name: 'Sol# Diminuito', notes: ['Ab4', 'B4', 'D5'] },
-        { name: 'Si Diminuito', notes: ['B4', 'D5', 'F5'] }
-      ],
-      'Avanzato': [
-        { name: 'Do Maj7', notes: ['C4', 'E4', 'G4', 'B4'] },
-        { name: 'Mib Maj7', notes: ['Eb4', 'G4', 'Bb4', 'D5'] },
-        { name: 'Fa Maj7', notes: ['F4', 'A4', 'C5', 'E5'] },
-        { name: 'La Maj7', notes: ['A4', 'Db5', 'E5', 'Ab5'] },
-        { name: 'Sib Maj7', notes: ['Bb4', 'D5', 'F5', 'A5'] },
-        { name: 'Fa Dom7', notes: ['F4', 'A4', 'C5', 'Eb5'] },
-        { name: 'Sol Dom7', notes: ['G4', 'B4', 'D5', 'F5'] },
-        { name: 'Re Dom7', notes: ['D4', 'Gb4', 'A4', 'C5'] },
-        { name: 'La Dom7', notes: ['A4', 'Db5', 'E5', 'G5'] },
-        { name: 'Mi Dom7', notes: ['E4', 'Ab4', 'B4', 'D5'] },
-        { name: 'Do Min7', notes: ['C4', 'Eb4', 'G4', 'Bb4'] },
-        { name: 'Re Min7', notes: ['D4', 'F4', 'A4', 'C5'] },
-        { name: 'Mi Min7', notes: ['E4', 'G4', 'B4', 'D5'] },
-        { name: 'Fa# Min7', notes: ['Gb4', 'A4', 'Db5', 'E5'] },
-        { name: 'Sol Min7', notes: ['G4', 'Bb4', 'D5', 'F5'] },
-        { name: 'La Min7', notes: ['A4', 'C5', 'E5', 'G5'] },
-        { name: 'Si Min7', notes: ['B4', 'D5', 'Gb5', 'A5'] },
-        { name: 'Do Semidiminuito', notes: ['C4', 'Eb4', 'Gb4', 'Bb4'] },
-        { name: 'Mi Semidiminuito', notes: ['E4', 'G4', 'Bb4', 'D5'] },
-        { name: 'Fa# Semidiminuito', notes: ['Gb4', 'A4', 'C5', 'E5'] },
-        { name: 'Si Semidiminuito', notes: ['B4', 'D5', 'F5', 'A5'] }
+      'Pro': [
+        { name: 'Do sus4', notes: ['C4', 'F4', 'G4'] }, { name: 'Re sus4', notes: ['D4', 'G4', 'A4'] },
+        { name: 'Mi sus4', notes: ['E4', 'A4', 'B4'] }, { name: 'Fa# sus4', notes: ['Gb4', 'B4', 'Db5'] },
+        { name: 'Sol sus4', notes: ['G4', 'C5', 'D5'] }, { name: 'La sus4', notes: ['A4', 'D5', 'E5'] },
+        { name: 'Si sus4', notes: ['B4', 'E5', 'Gb5'] }, { name: 'Do sus2', notes: ['C4', 'D4', 'G4'] },
+        { name: 'Re sus2', notes: ['D4', 'E4', 'A4'] }, { name: 'Fa sus2', notes: ['F4', 'G4', 'C5'] },
+        { name: 'Sol sus2', notes: ['G4', 'A4', 'D5'] }, { name: 'La sus2', notes: ['A4', 'B4', 'E5'] },
+        { name: 'Do Aumentato', notes: ['C4', 'E4', 'Ab4'] }, { name: 'Mib Aumentato', notes: ['Eb4', 'G4', 'B4'] },
+        { name: 'Fa Aumentato', notes: ['F4', 'A4', 'Db5'] }, { name: 'Sol Aumentato', notes: ['G4', 'B4', 'Eb5'] },
+        { name: 'La Aumentato', notes: ['A4', 'Db5', 'F5'] }, { name: 'Re Diminuito', notes: ['D4', 'F4', 'Ab4'] },
+        { name: 'Mi Diminuito', notes: ['E4', 'G4', 'Bb4'] }, { name: 'Fa# Diminuito', notes: ['Gb4', 'A4', 'C5'] },
+        { name: 'Sol# Diminuito', notes: ['Ab4', 'B4', 'D5'] }, { name: 'Si Diminuito', notes: ['B4', 'D5', 'F5'] }
       ],
       'Jazz': [
-        { name: 'Do Maj9', notes: ['C4', 'E4', 'G4', 'B4', 'D5'] },
-        { name: 'Fa Maj9', notes: ['F4', 'A4', 'C5', 'E5', 'G5'] },
-        { name: 'Sol Maj9', notes: ['G4', 'B4', 'D5', 'Gb5', 'A5'] },
-        { name: 'Do Min9', notes: ['C4', 'Eb4', 'G4', 'Bb4', 'D5'] },
-        { name: 'Re Min9', notes: ['D4', 'F4', 'A4', 'C5', 'E5'] },
-        { name: 'Sol Min9', notes: ['G4', 'Bb4', 'D5', 'F5', 'A5'] },
-        { name: 'La Min9', notes: ['A4', 'C5', 'E5', 'G5', 'B5'] },
-        { name: 'Do 9', notes: ['C4', 'E4', 'G4', 'Bb4', 'D5'] },
-        { name: 'Re 9', notes: ['D4', 'Gb4', 'A4', 'C5', 'E5'] },
-        { name: 'Mi 9', notes: ['E4', 'Ab4', 'B4', 'D5', 'Gb5'] },
-        { name: 'Fa 9', notes: ['F4', 'A4', 'C5', 'Eb5', 'G5'] },
-        { name: 'Do 7b9', notes: ['C4', 'E4', 'G4', 'Bb4', 'Db5'] },
-        { name: 'Re 7b9', notes: ['D4', 'Gb4', 'A4', 'C5', 'Eb5'] },
-        { name: 'Sol 7b9', notes: ['G4', 'B4', 'D5', 'F5', 'Ab5'] },
-        { name: 'La 7b9', notes: ['A4', 'Db5', 'E5', 'G5', 'Bb5'] },
-        { name: 'Do 6/9', notes: ['C4', 'E4', 'A4', 'D5'] },
-        { name: 'Fa 6/9', notes: ['F4', 'A4', 'D5', 'G5'] },
-        { name: 'Sol 6/9', notes: ['G4', 'B4', 'D5', 'E5', 'A5'] },
-        { name: 'La Min11', notes: ['A4', 'C5', 'D5', 'E5', 'G5'] },
-        { name: 'Re Min11', notes: ['D4', 'F4', 'G4', 'A4', 'C5'] },
-        { name: 'Mi Min11', notes: ['E4', 'G4', 'B4', 'D5', 'A5'] }
-      ],
-      'Virtuoso': [
-        { name: 'Do Maj9#11', notes: ['C4', 'E4', 'G4', 'B4', 'D5', 'Gb5'] },
-        { name: 'Fa Maj7#11', notes: ['F4', 'A4', 'C5', 'E5', 'B5'] },
-        { name: 'Sol Maj7#11', notes: ['G4', 'B4', 'Db5', 'Gb5'] },
-        { name: 'Do 7#9', notes: ['C4', 'E4', 'Bb4', 'Eb5'] },
-        { name: 'Re 7#9', notes: ['D4', 'Gb4', 'C5', 'F5'] },
-        { name: 'Mi 7#9', notes: ['E4', 'Ab4', 'D5', 'G5'] },
-        { name: 'La 7#9', notes: ['A4', 'Db5', 'G5', 'C5'] },
-        { name: 'Do 13', notes: ['C4', 'E4', 'Bb4', 'D5', 'A5'] },
-        { name: 'Fa 13', notes: ['F4', 'A4', 'Eb5', 'D5'] },
-        { name: 'Sol 13', notes: ['G4', 'B4', 'D5', 'F5', 'E5'] },
-        { name: 'La 13', notes: ['A4', 'Db5', 'G5', 'Gb5'] },
-        { name: 'Do 7alt', notes: ['C4', 'E4', 'Ab4', 'Bb4', 'Eb5'] },
-        { name: 'Re 7alt', notes: ['D4', 'Gb4', 'Bb4', 'C5', 'Eb5'] },
-        { name: 'Fa 7alt', notes: ['F4', 'A4', 'Db5', 'Eb5', 'Gb5'] },
-        { name: 'Sol 7alt', notes: ['G4', 'B4', 'Eb5', 'F5', 'Bb5'] },
-        { name: 'Fa m7b5', notes: ['F4', 'Ab4', 'B4', 'Eb5'] },
-        { name: 'Sol m7b5', notes: ['G4', 'Bb4', 'Db5', 'F5'] },
-        { name: 'La# m7b5', notes: ['Bb4', 'Db5', 'E5', 'Ab5'] },
-        { name: 'Do# m7b5', notes: ['Db4', 'E4', 'G4', 'B4'] },
-        { name: 'Re 7b9b13', notes: ['D4', 'Gb4', 'C5', 'Eb5', 'Bb5'] },
-        { name: 'Mi 7b9b13', notes: ['E4', 'Ab4', 'C5', 'D5', 'F5'] }
+        { name: 'Do Maj7', notes: ['C4', 'E4', 'G4', 'B4'] }, { name: 'Fa Maj7', notes: ['F4', 'A4', 'C5', 'E5'] },
+        { name: 'Sol Dom7', notes: ['G4', 'B4', 'D5', 'F5'] }, { name: 'Re Min7', notes: ['D4', 'F4', 'A4', 'C5'] },
+        { name: 'Si Semidiminuito', notes: ['B4', 'D5', 'F5', 'A5'] }, { name: 'Do Maj9', notes: ['C4', 'E4', 'G4', 'B4', 'D5'] },
+        { name: 'Sol Min9', notes: ['G4', 'Bb4', 'D5', 'F5', 'A5'] }, { name: 'Sol 7b9', notes: ['G4', 'B4', 'D5', 'F5', 'Ab5'] },
+        { name: 'Do 6/9', notes: ['C4', 'E4', 'A4', 'D5'] }, { name: 'La Min11', notes: ['A4', 'C5', 'D5', 'E5', 'G5'] },
+        { name: 'Do Maj9#11', notes: ['C4', 'E4', 'G4', 'B4', 'D5', 'Gb5'] }, { name: 'Mi 7#9', notes: ['E4', 'Ab4', 'D5', 'G5'] },
+        { name: 'Sol 13', notes: ['G4', 'B4', 'D5', 'F5', 'E5'] }, { name: 'Do 7alt', notes: ['C4', 'E4', 'Ab4', 'Bb4', 'Eb5'] },
+        { name: 'Re 7b9b13', notes: ['D4', 'Gb4', 'C5', 'Eb5', 'Bb5'] }, { name: 'Fa m7b5', notes: ['F4', 'Ab4', 'B4', 'Eb5'] },
+        { name: 'La Maj7', notes: ['A4', 'Db5', 'E5', 'Ab5'] }, { name: 'Re Dom7', notes: ['D4', 'Gb4', 'A4', 'C5'] },
+        { name: 'Do Min7', notes: ['C4', 'Eb4', 'G4', 'Bb4'] }, { name: 'Mi Min11', notes: ['E4', 'G4', 'B4', 'D5', 'A5'] },
+        { name: 'Fa 7alt', notes: ['F4', 'A4', 'Db5', 'Eb5', 'Gb5'] }, { name: 'Do# m7b5', notes: ['Db4', 'E4', 'G4', 'B4'] }
       ]
     };
 
@@ -194,11 +127,10 @@
         'Principiante': { current: 0, best: 0 },
         'Intermedio': { current: 0, best: 0 },
         'Avanzato': { current: 0, best: 0 },
-        'Jazz': { current: 0, best: 0 },
-        'Virtuoso': { current: 0, best: 0 }
+        'Pro': { current: 0, best: 0 },
+        'Jazz': { current: 0, best: 0 }
       });
       
-      // Tracking per il round corrente
       const [replayCount, setReplayCount] = useState(0);
       const [errorCount, setErrorCount] = useState(0);
       const [earnedStarsForRound, setEarnedStarsForRound] = useState(0);
@@ -209,8 +141,10 @@
       const [startTime, setStartTime] = useState(null);
       const [timeTaken, setTimeTaken] = useState(null);
       const [errorStatus, setErrorStatus] = useState(false);
+      const [mistakeMade, setMistakeMade] = useState(false);
       
       const audioCtxRef = useRef(null);
+      const pianoRef = useRef(null); // Ref per il container del piano (per i tasti freccia)
 
       const initAudio = () => {
         if (!audioCtxRef.current) {
@@ -293,7 +227,7 @@
 
       const playUserChord = () => {
         if (gameState === 'playing') {
-          setReplayCount(prev => prev + 1); // Penalità spostata qui
+          setReplayCount(prev => prev + 1); 
         }
         initAudio();
         selectedNotes.forEach(noteId => {
@@ -305,7 +239,7 @@
 
       const playUserArpeggio = () => {
         if (gameState === 'playing') {
-          setReplayCount(prev => prev + 1); // Penalità spostata qui
+          setReplayCount(prev => prev + 1); 
         }
         initAudio();
         let delayIndex = 0;
@@ -326,28 +260,57 @@
 
       const startGame = () => {
         initAudio();
-        const chordsList = CHORD_CATEGORIES[difficulty];
         
-        let randomChord;
-        do {
-          randomChord = chordsList[Math.floor(Math.random() * chordsList.length)];
-        } while (currentChord && randomChord.name === currentChord.name && chordsList.length > 1);
+        let targetChord;
+        let initialSelectedNotes;
+        let initialActiveBox = 0;
 
-        setCurrentChord(randomChord);
-        setSelectedNotes(new Array(randomChord.notes.length).fill(null));
-        setActiveBoxIndex(0); 
+        // Generazione Dinamica
+        if (difficulty === 'Principiante') {
+          const randomKey = PIANO_KEYS[Math.floor(Math.random() * PIANO_KEYS.length)];
+          targetChord = { name: `Nota ${randomKey.label}`, notes: [randomKey.id] };
+          initialSelectedNotes = [null];
+          
+        } else if (difficulty === 'Intermedio') {
+          // Genera un intervallo (1-12 semitoni)
+          const baseIndex = Math.floor(Math.random() * (PIANO_KEYS.length - 12));
+          const intervalDistance = Math.floor(Math.random() * 12) + 1;
+          const targetIndex = baseIndex + intervalDistance;
+          
+          const baseKey = PIANO_KEYS[baseIndex];
+          const targetKey = PIANO_KEYS[targetIndex];
+          
+          targetChord = { 
+            name: `Intervallo: ${INTERVAL_NAMES[intervalDistance]}`, 
+            notes: [baseKey.id, targetKey.id] 
+          };
+          initialSelectedNotes = [baseKey.id, null]; // Regala la prima nota
+          initialActiveBox = 1; // Sposta il focus direttamente sulla seconda nota
+          
+        } else {
+          // Selezione da dizionario (Avanzato, Pro, Jazz)
+          const chordsList = CHORD_CATEGORIES[difficulty];
+          do {
+            targetChord = chordsList[Math.floor(Math.random() * chordsList.length)];
+          } while (currentChord && targetChord.name === currentChord.name && chordsList.length > 1);
+          initialSelectedNotes = new Array(targetChord.notes.length).fill(null);
+        }
+
+        setCurrentChord(targetChord);
+        setSelectedNotes(initialSelectedNotes);
+        setActiveBoxIndex(initialActiveBox); 
         setStartTime(Date.now());
         setTimeTaken(null);
         setGameState('playing');
         
-        // Reset statistiche del round
         setErrorStatus(false);
         setReplayCount(0);
         setErrorCount(0);
         setEarnedStarsForRound(0);
+        setMistakeMade(false);
         
         setTimeout(() => {
-          randomChord.notes.forEach(noteId => {
+          targetChord.notes.forEach(noteId => {
             playTone(FREQUENCIES[noteId], 2.0, 0.4);
           });
         }, 100);
@@ -369,11 +332,12 @@
 
       const selectBox = (index) => {
         if (gameState === 'playing') {
+          // Blocca la selezione del primo box se siamo in modalità Intermedio (è regalato)
+          if (difficulty === 'Intermedio' && index === 0) return;
           setActiveBoxIndex(index);
         }
       };
 
-      // Calcola le stelle potenziali in base agli errori e riascolti
       const calculatePotentialStars = () => {
         let baseStars = 3;
         if (replayCount > 0 && replayCount <= 2) baseStars = 2;
@@ -402,7 +366,6 @@
           const earned = calculatePotentialStars();
           setEarnedStarsForRound(earned);
 
-          // Aggiunge le stelle alla streak corrente e aggiorna il record
           setStats(prev => {
             const currentDiffStats = prev[difficulty];
             const newCurrent = currentDiffStats.current + earned;
@@ -418,8 +381,8 @@
         } else {
           setErrorStatus(true);
           setErrorCount(prev => prev + 1);
+          setMistakeMade(true);
           
-          // L'errore azzera istantaneamente la streak di stelle
           setStats(prev => ({
             ...prev,
             [difficulty]: {
@@ -432,43 +395,82 @@
         }
       };
 
+      // Funzione per scorrere la tastiera manualmente
+      const scrollPiano = (direction) => {
+        if (pianoRef.current) {
+          const amount = direction === 'left' ? -200 : 200;
+          pianoRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+      };
+
       const renderPiano = () => {
         let whiteKeyIndex = 0;
         const WHITE_KEY_WIDTH = 56;
         const BLACK_KEY_WIDTH = 32;
         
         return (
-          <div className="relative h-64 mx-auto select-none" style={{ width: `${14 * WHITE_KEY_WIDTH}px` }}>
-            {PIANO_KEYS.map((key) => {
-              const isWhite = key.type === 'white';
-              const isSelected = selectedNotes.includes(key.id); 
-              
-              let leftPosition;
-              if (isWhite) {
-                leftPosition = whiteKeyIndex * WHITE_KEY_WIDTH;
-                whiteKeyIndex++;
-              } else {
-                leftPosition = (whiteKeyIndex * WHITE_KEY_WIDTH) - (BLACK_KEY_WIDTH / 2);
-              }
+          <div className="relative w-full max-w-full group">
+            
+            {/* Pulsante Scorrimento Sinistra */}
+            <button
+              onClick={() => scrollPiano('left')}
+              className="absolute left-0 top-0 bottom-0 z-20 w-12 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent flex items-center justify-start opacity-60 hover:opacity-100 transition-opacity"
+              title="Scorri a sinistra"
+            >
+              <div className="bg-slate-800 text-white p-1.5 rounded-r-xl border border-l-0 border-slate-600 shadow-lg">
+                <ChevronLeft size={24} />
+              </div>
+            </button>
 
-              return (
-                <div
-                  key={key.id}
-                  onMouseDown={() => assignNoteToActiveBox(key.id)}
-                  onTouchStart={(e) => { e.preventDefault(); assignNoteToActiveBox(key.id); }}
-                  className={`absolute cursor-pointer border flex flex-col justify-end pb-4 items-center transition-colors duration-150 touch-none select-none
-                    ${isWhite 
-                      ? `h-64 w-[56px] rounded-b-lg border-slate-300 z-0 ${isSelected ? 'bg-indigo-200' : 'bg-white hover:bg-slate-100'}` 
-                      : `h-40 w-[32px] rounded-b-md border-black z-10 ${isSelected ? 'bg-indigo-600' : 'bg-slate-900 hover:bg-slate-700'}`
-                    }`}
-                  style={{ left: `${leftPosition}px` }}
-                >
-                  <span className={`text-xs font-semibold ${isWhite ? 'text-slate-500' : 'text-slate-400'} pointer-events-none`}>
-                    {isWhite && key.label}
-                  </span>
-                </div>
-              );
-            })}
+            {/* Container Tastiera */}
+            <div
+              ref={pianoRef}
+              className="w-full overflow-x-auto pb-6 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x"
+            >
+              <div className="relative h-64 mx-auto select-none" style={{ width: `${14 * WHITE_KEY_WIDTH}px` }}>
+                {PIANO_KEYS.map((key) => {
+                  const isWhite = key.type === 'white';
+                  const isSelected = selectedNotes.includes(key.id); 
+                  
+                  let leftPosition;
+                  if (isWhite) {
+                    leftPosition = whiteKeyIndex * WHITE_KEY_WIDTH;
+                    whiteKeyIndex++;
+                  } else {
+                    leftPosition = (whiteKeyIndex * WHITE_KEY_WIDTH) - (BLACK_KEY_WIDTH / 2);
+                  }
+
+                  return (
+                    <div
+                      key={key.id}
+                      onClick={() => assignNoteToActiveBox(key.id)}
+                      className={`absolute cursor-pointer border flex flex-col justify-end pb-4 items-center transition-colors duration-150 select-none touch-pan-x
+                        ${isWhite 
+                          ? `h-64 w-[56px] rounded-b-lg border-slate-300 z-0 active:bg-slate-200 ${isSelected ? 'bg-indigo-200' : 'bg-white hover:bg-slate-100'}` 
+                          : `h-40 w-[32px] rounded-b-md border-black z-10 active:bg-slate-600 ${isSelected ? 'bg-indigo-600' : 'bg-slate-900 hover:bg-slate-700'}`
+                        }`}
+                      style={{ left: `${leftPosition}px` }}
+                    >
+                      <span className={`text-xs font-semibold pointer-events-none ${isWhite ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {isWhite && key.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Pulsante Scorrimento Destra */}
+            <button
+              onClick={() => scrollPiano('right')}
+              className="absolute right-0 top-0 bottom-0 z-20 w-12 bg-gradient-to-l from-slate-900 via-slate-900/80 to-transparent flex items-center justify-end opacity-60 hover:opacity-100 transition-opacity"
+              title="Scorri a destra"
+            >
+              <div className="bg-slate-800 text-white p-1.5 rounded-l-xl border border-r-0 border-slate-600 shadow-lg">
+                <ChevronRight size={24} />
+              </div>
+            </button>
+
           </div>
         );
       };
@@ -487,9 +489,9 @@
                   <Volume2 size={24} />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold">Ear Training Accordi</h1>
+                  <h1 className="text-xl font-bold">Ear Training</h1>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {Object.keys(CHORD_CATEGORIES).map(diff => (
+                    {Object.keys(stats).map(diff => (
                       <button
                         key={diff}
                         onClick={() => handleDifficultyChange(diff)}
@@ -531,11 +533,11 @@
                   </div>
                   <h2 className="text-3xl font-bold mb-2">Livello {difficulty}</h2>
                   <p className="text-slate-400 max-w-md mx-auto mb-8">
-                    {difficulty === 'Principiante' && "Accordi maggiori e minori (3 note). Perfetto per iniziare."}
-                    {difficulty === 'Intermedio' && "Accordi sospesi, diminuiti e aumentati (3 note). Inizia la vera sfida."}
-                    {difficulty === 'Avanzato' && "Accordi di settima (4 note). Richiede un orecchio ben allenato."}
-                    {difficulty === 'Jazz' && "Accordi complessi, none e alterazioni (4-5 note). Per veri esperti."}
-                    {difficulty === 'Virtuoso' && "Accordi ultra complessi: 11me, 13me, alt e semi-diminuiti. Sfida estrema!"}
+                    {difficulty === 'Principiante' && "Allena l'orecchio relativo e assoluto indovinando una singola nota generata casualmente."}
+                    {difficulty === 'Intermedio' && "Riconosci la distanza (intervallo) tra due note. Il sistema ti regala la nota di partenza!"}
+                    {difficulty === 'Avanzato' && "Accordi maggiori e minori (3 note). Le fondamenta dell'armonia."}
+                    {difficulty === 'Pro' && "Accordi sospesi (sus), diminuiti e aumentati (3 note). Tensione e risoluzione."}
+                    {difficulty === 'Jazz' && "Accordi complessi (settime, none, alterati, ecc). Per veri musicisti."}
                   </p>
                   <button 
                     onClick={startGame}
@@ -558,7 +560,9 @@
                     >
                       <Volume2 className="text-indigo-400 group-hover:scale-110 transition-transform" />
                       <div className="text-left">
-                        <div className="leading-tight">Accordo da</div>
+                        <div className="leading-tight">
+                          {difficulty === 'Principiante' ? 'La Nota da' : difficulty === 'Intermedio' ? "L'Intervallo da" : 'Accordo da'}
+                        </div>
                         <div className="text-sm text-slate-400 font-normal">Indovinare</div>
                       </div>
                     </button>
@@ -566,24 +570,31 @@
                     {/* Box delle Note e Ascolto Utente */}
                     <div className="flex flex-col items-center md:items-end w-full md:w-auto gap-4">
                       <div className="flex flex-col items-center md:items-end">
-                        <p className="text-sm text-slate-400 mb-2 font-medium">Componi l'accordo</p>
+                        <p className="text-sm text-slate-400 mb-2 font-medium">
+                           {difficulty === 'Principiante' ? "Trova la nota" : difficulty === 'Intermedio' ? "Completa l'intervallo" : "Componi l'accordo"}
+                        </p>
                         <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
                           {selectedNotes.map((noteId, i) => {
                             const keyInfo = PIANO_KEYS.find(k => k.id === noteId);
                             const isActive = activeBoxIndex === i && gameState === 'playing';
+                            const isLocked = difficulty === 'Intermedio' && i === 0; // Il box regalato
                             
                             return (
                               <div 
                                 key={i}
                                 onClick={() => selectBox(i)}
-                                className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold transition-all cursor-pointer
-                                  ${isActive 
-                                    ? 'border-amber-400 ring-4 ring-amber-400/20 scale-105' 
-                                    : 'border-slate-600 hover:border-slate-400'
+                                className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold transition-all 
+                                  ${isLocked 
+                                    ? 'border-slate-500 bg-slate-700/50 cursor-not-allowed opacity-80' 
+                                    : isActive 
+                                      ? 'border-amber-400 ring-4 ring-amber-400/20 scale-105 cursor-pointer' 
+                                      : 'border-slate-600 hover:border-slate-400 cursor-pointer'
                                   }
-                                  ${noteId 
+                                  ${noteId && !isLocked
                                     ? 'bg-indigo-600/20 text-indigo-300 shadow-inner' 
-                                    : 'bg-slate-800/80 text-transparent'
+                                    : noteId && isLocked 
+                                      ? 'text-slate-300' 
+                                      : 'bg-slate-800/80 text-transparent'
                                   }
                                 `}
                               >
@@ -607,21 +618,23 @@
                           title="Suona tutte le note insieme"
                         >
                           <Music size={16} className={selectedNotes.some(n => n !== null) ? 'text-amber-400' : ''} />
-                          Accordo
+                          {difficulty === 'Principiante' ? 'Riproduci' : difficulty === 'Intermedio' ? 'Armonico' : 'Accordo'}
                         </button>
-                        <button 
-                          onClick={playUserArpeggio}
-                          disabled={!selectedNotes.some(n => n !== null)}
-                          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
-                            ${selectedNotes.some(n => n !== null) 
-                              ? 'bg-slate-600 hover:bg-slate-500 text-white' 
-                              : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
-                            }`}
-                          title="Suona le note una per una"
-                        >
-                          <Play size={16} className={selectedNotes.some(n => n !== null) ? 'text-emerald-400' : ''} />
-                          Arpeggio
-                        </button>
+                        {difficulty !== 'Principiante' && (
+                          <button 
+                            onClick={playUserArpeggio}
+                            disabled={!selectedNotes.some(n => n !== null)}
+                            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
+                              ${selectedNotes.some(n => n !== null) 
+                                ? 'bg-slate-600 hover:bg-slate-500 text-white' 
+                                : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
+                              }`}
+                            title="Suona le note una per una"
+                          >
+                            <Play size={16} className={selectedNotes.some(n => n !== null) ? 'text-emerald-400' : ''} />
+                            {difficulty === 'Intermedio' ? 'Melodico' : 'Arpeggio'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -668,7 +681,7 @@
                         <div className="text-emerald-400 font-bold text-xl sm:text-2xl flex flex-col items-center gap-2 text-center">
                           <div className="flex items-center gap-2">
                             <Check size={32} className="shrink-0" />
-                            Esatto! Era un {currentChord.name}
+                            Esatto! Era {difficulty === 'Principiante' ? 'il ' : 'un '}{currentChord.name}
                           </div>
                           {earnedStarsForRound > 0 ? (
                             <div className="flex items-center gap-1 text-amber-400 text-lg">
@@ -700,9 +713,7 @@
                   </div>
 
                   {/* Pianoforte Interattivo */}
-                  <div className="w-full overflow-x-auto pb-6 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md">
-                    {renderPiano()}
-                  </div>
+                  {renderPiano()}
 
                 </div>
               )}
