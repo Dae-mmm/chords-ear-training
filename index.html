@@ -64,6 +64,24 @@
       background: #334155 !important;
       background-color: #334155 !important;
     }
+
+    @font-face {
+      font-family: 'Bravura Text';
+      font-style: normal;
+      font-display: swap;
+      font-weight: 400;
+      src: url(https://cdn.jsdelivr.net/fontsource/fonts/bravura-text@latest/latin-400-normal.woff2) format('woff2'),
+           url(https://cdn.jsdelivr.net/fontsource/fonts/bravura-text@latest/latin-400-normal.woff) format('woff');
+    }
+
+    .music-icon {
+      font-family: 'Bravura Text', 'Bravura', serif;
+      font-weight: 400;
+      font-style: normal;
+      font-feature-settings: normal;
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+    }
   </style>
   
   <!-- React & ReactDOM (Caricati via CDN) -->
@@ -832,65 +850,84 @@
 
     const getChordKey = (chord) => `${chord.root}-${chord.type || chord.symbol}-${chord.notes.join(',')}`;
 
+    // Glifi SMuFL (Bravura Text) — notazione musicale vera, non emoji Unicode
+    const SMUFL = {
+      note8thUp: '\uE1D7',
+      noteQuarterUp: '\uE1D5',
+      noteheadBlack: '\uE0A4',
+      chordSymbolsDiminished: '\uE870',
+      chordSymbolsMajorSeventh: '\uE87A',
+      accidentalSharp: '\uE262',
+      figuredBass1: '\uE881',
+      figuredBass7: '\uE887',
+    };
+
+    const MusicGlyph = ({ children, className = '' }) => (
+      <span className={`music-icon ${className}`} aria-hidden>{children}</span>
+    );
+
+    const StackedNoteheads = ({ count, className = '' }) => (
+      <MusicGlyph className={`inline-flex flex-col items-center leading-[0.36] ${className}`}>
+        {Array.from({ length: count }, (_, i) => (
+          <span key={i} className={i > 0 ? '-mt-[0.34em]' : ''}>{SMUFL.noteheadBlack}</span>
+        ))}
+      </MusicGlyph>
+    );
+
+    const ArpeggioNotes = ({ count, className = '' }) => (
+      <MusicGlyph className={`inline-flex items-end justify-center ${className}`}>
+        {Array.from({ length: count }, (_, i) => (
+          <span
+            key={i}
+            className={`leading-none ${i > 0 ? '-ml-[0.14em]' : ''}`}
+            style={{ transform: `translateY(-${i * 14}%)` }}
+          >
+            {SMUFL.noteQuarterUp}
+          </span>
+        ))}
+      </MusicGlyph>
+    );
+
     // Simboli musicali progressivi: dal più intuitivo al più "da spartito avanzato"
     const DifficultyIcon = ({ diff, className = '' }) => {
       const base = `inline-flex items-center justify-center leading-none select-none ${className}`;
 
       switch (diff) {
         case 'beginner':
-          return <span className={base} aria-hidden>♪</span>;
+          return (
+            <MusicGlyph className={base}>
+              {SMUFL.note8thUp}
+            </MusicGlyph>
+          );
 
         case 'intermediate':
-          return (
-            <span className={`${base} gap-px tracking-tighter`} aria-hidden>
-              <span>♩</span>
-              <span className="opacity-50 text-[0.55em] -mx-px">↗</span>
-              <span>♩</span>
-            </span>
-          );
+          return <ArpeggioNotes count={2} className={base} />;
 
         case 'intermediate_plus':
-          return (
-            <span className={`${base} flex-col gap-0 text-[0.82em] leading-[0.58]`} aria-hidden>
-              <span>♩</span>
-              <span>♩</span>
-            </span>
-          );
+          return <StackedNoteheads count={2} className={`${base} text-[0.88em]`} />;
 
         case 'advanced':
-          return (
-            <span className={`${base} gap-px tracking-tighter text-[0.88em]`} aria-hidden>
-              <span>♩</span>
-              <span className="opacity-50 text-[0.5em] -mx-px">↗</span>
-              <span>♩</span>
-              <span className="opacity-50 text-[0.5em] -mx-px">↗</span>
-              <span>♩</span>
-            </span>
-          );
+          return <ArpeggioNotes count={3} className={`${base} text-[0.82em]`} />;
 
         case 'advanced_plus':
-          return (
-            <span className={`${base} flex-col gap-0 text-[0.72em] leading-[0.52] font-serif`} aria-hidden>
-              <span>♩</span>
-              <span>♩</span>
-              <span>♩</span>
-            </span>
-          );
+          return <StackedNoteheads count={3} className={`${base} text-[0.78em]`} />;
 
         case 'pro':
           return (
-            <span className={`${base} font-serif tracking-tight`} aria-hidden>
-              <span>°</span>
-              <span className="text-[0.62em] align-super leading-none">7</span>
-            </span>
+            <MusicGlyph className={`${base} items-baseline`}>
+              <span>{SMUFL.chordSymbolsDiminished}</span>
+              <span className="text-[0.55em] align-super leading-none">{SMUFL.figuredBass7}</span>
+            </MusicGlyph>
           );
 
         case 'jazz':
           return (
-            <span className={`${base} font-serif tracking-tighter text-[0.78em]`} aria-hidden>
-              <span>Δ</span>
-              <span className="text-[0.58em] align-super leading-none">7♯11</span>
-            </span>
+            <MusicGlyph className={`${base} items-baseline tracking-tighter text-[0.82em]`}>
+              <span>{SMUFL.chordSymbolsMajorSeventh}</span>
+              <span className="text-[0.5em] align-super leading-none ml-px">
+                {SMUFL.accidentalSharp}{SMUFL.figuredBass1}{SMUFL.figuredBass1}
+              </span>
+            </MusicGlyph>
           );
 
         default:
