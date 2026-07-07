@@ -8,6 +8,7 @@
   
   <!-- Tailwind CSS (Caricato via CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preload" href="fonts/BravuraText.woff2" as="font" type="font/woff2" crossorigin>
   <style>
     html.fullscreen-active, html.fullscreen-active body {
       overflow: hidden;
@@ -70,17 +71,19 @@
       font-style: normal;
       font-display: swap;
       font-weight: 400;
-      src: url(https://cdn.jsdelivr.net/fontsource/fonts/bravura-text@latest/latin-400-normal.woff2) format('woff2'),
-           url(https://cdn.jsdelivr.net/fontsource/fonts/bravura-text@latest/latin-400-normal.woff) format('woff');
+      src: url('fonts/BravuraText.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/BravuraText.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/BravuraText.woff') format('woff');
     }
 
     .music-icon {
-      font-family: 'Bravura Text', 'Bravura', serif;
+      font-family: 'Bravura Text', serif;
       font-weight: 400;
       font-style: normal;
       font-feature-settings: normal;
       line-height: 1;
       -webkit-font-smoothing: antialiased;
+      font-synthesis: none;
     }
   </style>
   
