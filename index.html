@@ -102,6 +102,7 @@
         playOneByOne: 'Play notes one by one',
         fullscreen: 'Fullscreen',
         exitFullscreen: 'Exit fullscreen',
+        rotateDevice: 'Rotate your phone to landscape to use fullscreen mode',
         note: 'Note',
         interval: 'Interval',
         the: 'the',
@@ -155,6 +156,7 @@
         playOneByOne: 'Suona le note una per una',
         fullscreen: 'Schermo intero',
         exitFullscreen: 'Esci da schermo intero',
+        rotateDevice: 'Ruota il telefono in orizzontale per usare lo schermo intero',
         note: 'Nota',
         interval: 'Intervallo',
         the: 'il',
@@ -208,6 +210,7 @@
         playOneByOne: 'Jouer les notes une par une',
         fullscreen: 'Plein écran',
         exitFullscreen: 'Quitter le plein écran',
+        rotateDevice: 'Tournez votre téléphone en mode paysage pour utiliser le plein écran',
         note: 'Note',
         interval: 'Intervalle',
         the: 'la',
@@ -261,6 +264,7 @@
         playOneByOne: 'Tocar las notas una por una',
         fullscreen: 'Pantalla completa',
         exitFullscreen: 'Salir de pantalla completa',
+        rotateDevice: 'Gira el teléfono en horizontal para usar la pantalla completa',
         note: 'Nota',
         interval: 'Intervalo',
         the: 'la',
@@ -314,6 +318,7 @@
         playOneByOne: 'Noten einzeln spielen',
         fullscreen: 'Vollbild',
         exitFullscreen: 'Vollbild beenden',
+        rotateDevice: 'Drehe dein Handy ins Querformat, um den Vollbildmodus zu nutzen',
         note: 'Note',
         interval: 'Intervall',
         the: 'die',
@@ -392,6 +397,8 @@
     const ChevronRight = (props) => <Icon {...props}><polyline points="9 18 15 12 9 6" /></Icon>;
     const Maximize2 = (props) => <Icon {...props}><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></Icon>;
     const Minimize2 = (props) => <Icon {...props}><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></Icon>;
+    const RotateCw = (props) => <Icon {...props}><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></Icon>;
+    const Smartphone = (props) => <Icon {...props}><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></Icon>;
 
     // Frequenze delle note per l'AudioContext
     const FREQUENCIES = {
@@ -487,8 +494,7 @@
           const portrait = window.innerHeight > window.innerWidth;
           setIsMobile(mobile);
           setIsPortrait(portrait);
-          const span = (isFullscreen && mobile && portrait) ? window.innerHeight : window.innerWidth;
-          setLayoutSpan(span);
+          setLayoutSpan(window.innerWidth);
         };
 
         updateLayout();
@@ -520,10 +526,16 @@
         try {
           await document.documentElement.requestFullscreen?.();
         } catch (_) { /* fallback to CSS fullscreen */ }
+        try {
+          await screen.orientation?.lock?.('landscape');
+        } catch (_) { /* orientation lock not supported */ }
       };
 
       const exitFullscreen = async () => {
         setIsFullscreen(false);
+        try {
+          screen.orientation?.unlock?.();
+        } catch (_) { /* ignore */ }
         try {
           if (document.fullscreenElement) {
             await document.exitFullscreen?.();
@@ -536,7 +548,7 @@
         else enterFullscreen();
       };
 
-      const useRotatedLayout = isFullscreen && isMobile && isPortrait;
+      const showRotatePrompt = isFullscreen && isMobile && isPortrait;
       
       // Nuovo Sistema Punteggi: Streak di Stelle e Record
       const [stats, setStats] = useState({
@@ -947,36 +959,140 @@
       const isReadyToSubmit = selectedNotes.length > 0 && selectedNotes.every(note => note !== null);
       const currentStarsPotential = calculatePotentialStars();
 
+      const fullscreenBtn = (compact = false) => (
+        <button
+          onClick={toggleFullscreen}
+          className={`flex items-center gap-2 rounded-xl font-semibold transition-colors shrink-0 ${
+            compact
+              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1.5 border border-slate-600'
+              : 'bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 text-sm shadow-md shadow-indigo-500/30'
+          }`}
+          title={isFullscreen ? t.exitFullscreen : t.fullscreen}
+          aria-label={isFullscreen ? t.exitFullscreen : t.fullscreen}
+        >
+          {isFullscreen ? <Minimize2 size={compact ? 16 : 18} /> : <Maximize2 size={compact ? 16 : 18} />}
+          {(!compact || isFullscreen) && (
+            <span className={compact ? 'text-[10px] leading-tight' : ''}>
+              {isFullscreen ? t.exitFullscreen : t.fullscreen}
+            </span>
+          )}
+        </button>
+      );
+
+      const statsBlock = (compact = false) => (
+        <div className={`flex items-center bg-slate-800/80 rounded-2xl border border-slate-700 shrink-0 justify-center ${
+          compact ? 'gap-2 px-2 py-1' : 'gap-4 px-4 py-2.5'
+        }`}>
+          <div className="flex items-center gap-1 text-orange-400" title={t.currentStreak}>
+            <Flame size={compact ? 14 : 20} className={stats[difficulty].current > 0 && gameState === 'playing' ? "animate-pulse" : ""} />
+            <span className={`font-bold leading-none ${compact ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].current}</span>
+            <Star size={compact ? 10 : 14} className="fill-orange-400 opacity-80" />
+          </div>
+          <div className={`w-px bg-slate-600 ${compact ? 'h-4' : 'h-6'}`}></div>
+          <div className="flex items-center gap-1 text-amber-400" title={t.bestStreak}>
+            <Trophy size={compact ? 14 : 20} />
+            <span className={`font-bold leading-none ${compact ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].best}</span>
+            <Star size={compact ? 10 : 14} className="fill-amber-400 opacity-80" />
+          </div>
+        </div>
+      );
+
+      const langSelector = () => (
+        <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1.5 rounded-xl border border-slate-700 shrink-0">
+          {LANGUAGES.map(l => (
+            <button
+              key={l.code}
+              onClick={() => setLang(l.code)}
+              className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors
+                ${lang === l.code
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      );
+
+      const difficultySelector = (compact = false) => (
+        <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-2'}`}>
+          {DIFFICULTIES.map(diff => (
+            <button
+              key={diff}
+              onClick={() => handleDifficultyChange(diff)}
+              className={`rounded-full font-semibold transition-colors whitespace-nowrap ${
+                compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'
+              }
+                ${difficulty === diff 
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' 
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                }`}
+            >
+              {t.difficulties[diff]}
+            </button>
+          ))}
+        </div>
+      );
+
+      if (showRotatePrompt) {
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900 text-slate-100 font-sans flex flex-col items-center justify-center p-8 text-center gap-6">
+            <div className="relative">
+              <Smartphone size={64} className="text-indigo-400" />
+              <RotateCw size={28} className="absolute -right-3 -top-3 text-amber-400 animate-spin" style={{ animationDuration: '3s' }} />
+            </div>
+            <p className="text-lg text-slate-300 max-w-xs leading-relaxed">{t.rotateDevice}</p>
+            <button
+              onClick={exitFullscreen}
+              className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2"
+            >
+              <Minimize2 size={20} />
+              {t.exitFullscreen}
+            </button>
+          </div>
+        );
+      }
+
       return (
         <div
           className={`bg-slate-900 text-slate-100 font-sans ${
             isFullscreen
-              ? 'fixed z-50 overflow-hidden flex flex-col'
-              : 'min-h-screen flex items-center justify-center p-4'
+              ? 'fixed inset-0 z-50 overflow-hidden flex flex-col'
+              : isMobile
+                ? 'min-h-screen min-h-[100dvh] flex flex-col'
+                : 'min-h-screen flex items-center justify-center p-4'
           }`}
-          style={isFullscreen ? (useRotatedLayout ? {
-            top: 0,
-            left: 0,
-            width: '100vh',
-            height: '100vw',
-            maxHeight: '100dvh',
-            maxWidth: '100dvw',
-            transform: 'rotate(90deg) translateY(-100%)',
-            transformOrigin: 'top left',
-          } : {
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            maxHeight: '100dvh',
-          }) : undefined}
         >
-          <div className={`w-full flex flex-col ${
+          <div className={`w-full flex flex-col flex-1 min-h-0 ${
             isFullscreen
-              ? 'h-full min-h-0 bg-slate-900 border-0 shadow-none'
-              : 'max-w-4xl bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-700'
+              ? 'h-full bg-slate-900'
+              : isMobile
+                ? 'min-h-screen min-h-[100dvh] bg-slate-900'
+                : 'max-w-4xl bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-700'
           }`}>
             
             {/* Header App */}
+            {isMobile && !isFullscreen ? (
+              <div className="bg-slate-900 border-b border-slate-700 p-3 space-y-3 shrink-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                      <Volume2 size={20} />
+                    </div>
+                    <h1 className="text-lg font-bold truncate">{t.appName}</h1>
+                  </div>
+                  {fullscreenBtn(false)}
+                </div>
+                <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
+                  {difficultySelector(false)}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  {langSelector()}
+                  {statsBlock(false)}
+                </div>
+              </div>
+            ) : (
             <div className={`bg-slate-900/50 border-b border-slate-700 flex items-center justify-between gap-2 shrink-0 ${
               isFullscreen ? 'p-2' : 'p-6 flex-col md:flex-row gap-4'
             }`}>
@@ -988,78 +1104,24 @@
                 )}
                 <div className="min-w-0">
                   {!isFullscreen && <h1 className="text-xl font-bold">{t.appName}</h1>}
-                  <div className={`flex flex-wrap gap-1 ${isFullscreen ? '' : 'mt-2 gap-2'}`}>
-                    {DIFFICULTIES.map(diff => (
-                      <button
-                        key={diff}
-                        onClick={() => handleDifficultyChange(diff)}
-                        className={`rounded-full font-semibold transition-colors ${
-                          isFullscreen ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'
-                        }
-                          ${difficulty === diff 
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' 
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                          }`}
-                      >
-                        {t.difficulties[diff]}
-                      </button>
-                    ))}
+                  <div className={`${isFullscreen ? '' : 'mt-2'}`}>
+                    {difficultySelector(isFullscreen)}
                   </div>
                 </div>
               </div>
               
               <div className={`flex items-center shrink-0 ${isFullscreen ? 'gap-1.5' : 'gap-3 w-full md:w-auto justify-center md:justify-end'}`}>
-                {isMobile && (
-                  <button
-                    onClick={toggleFullscreen}
-                    className={`bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-600 ${
-                      isFullscreen ? 'p-1.5' : 'p-2'
-                    }`}
-                    title={isFullscreen ? t.exitFullscreen : t.fullscreen}
-                    aria-label={isFullscreen ? t.exitFullscreen : t.fullscreen}
-                  >
-                    {isFullscreen ? <Minimize2 size={isFullscreen ? 16 : 20} /> : <Maximize2 size={20} />}
-                  </button>
-                )}
-
-                {!isFullscreen && (
-                  <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1.5 rounded-xl border border-slate-700">
-                    {LANGUAGES.map(l => (
-                      <button
-                        key={l.code}
-                        onClick={() => setLang(l.code)}
-                        className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors
-                          ${lang === l.code
-                            ? 'bg-indigo-600 text-white'
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-                          }`}
-                      >
-                        {l.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className={`flex items-center bg-slate-800/80 rounded-2xl border border-slate-700 shrink-0 justify-center ${
-                  isFullscreen ? 'gap-2 px-2 py-1' : 'gap-4 px-4 py-2.5'
-                }`}>
-                  <div className="flex items-center gap-1 text-orange-400" title={t.currentStreak}>
-                    <Flame size={isFullscreen ? 14 : 20} className={stats[difficulty].current > 0 && gameState === 'playing' ? "animate-pulse" : ""} />
-                    <span className={`font-bold leading-none ${isFullscreen ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].current}</span>
-                    <Star size={isFullscreen ? 10 : 14} className="fill-orange-400 opacity-80" />
-                  </div>
-                  <div className="w-px h-4 bg-slate-600"></div>
-                  <div className="flex items-center gap-1 text-amber-400" title={t.bestStreak}>
-                    <Trophy size={isFullscreen ? 14 : 20} />
-                    <span className={`font-bold leading-none ${isFullscreen ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].best}</span>
-                    <Star size={isFullscreen ? 10 : 14} className="fill-amber-400 opacity-80" />
-                  </div>
-                </div>
+                {isMobile && fullscreenBtn(true)}
+                {!isFullscreen && langSelector()}
+                {statsBlock(isFullscreen)}
               </div>
             </div>
+            )}
 
             {/* Area di Gioco */}
-            <div className={`flex-1 min-h-0 flex flex-col ${isFullscreen ? 'p-2 overflow-hidden' : 'p-8'}`}>
+            <div className={`flex-1 min-h-0 flex flex-col ${
+              isFullscreen ? 'p-2 overflow-hidden' : isMobile ? 'p-4 overflow-y-auto' : 'p-8'
+            }`}>
               {gameState === 'idle' ? (
                 <div className={`text-center flex flex-col items-center justify-center flex-1 ${isFullscreen ? 'py-4' : 'py-10'}`}>
                   <div className={`bg-indigo-500/20 rounded-full flex items-center justify-center mb-4 ${isFullscreen ? 'w-14 h-14' : 'w-24 h-24 mb-6'}`}>
