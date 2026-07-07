@@ -102,7 +102,7 @@
         playOneByOne: 'Play notes one by one',
         fullscreen: 'Fullscreen',
         exitFullscreen: 'Exit fullscreen',
-        rotateDevice: 'Rotate your phone to landscape to use fullscreen mode',
+        rotateDevice: 'Rotate your phone to landscape to continue, or exit fullscreen mode',
         note: 'Note',
         interval: 'Interval',
         the: 'the',
@@ -156,7 +156,7 @@
         playOneByOne: 'Suona le note una per una',
         fullscreen: 'Schermo intero',
         exitFullscreen: 'Esci da schermo intero',
-        rotateDevice: 'Ruota il telefono in orizzontale per usare lo schermo intero',
+        rotateDevice: 'Ruota il telefono in orizzontale per continuare, oppure esci dalla modalità schermo intero',
         note: 'Nota',
         interval: 'Intervallo',
         the: 'il',
@@ -210,7 +210,7 @@
         playOneByOne: 'Jouer les notes une par une',
         fullscreen: 'Plein écran',
         exitFullscreen: 'Quitter le plein écran',
-        rotateDevice: 'Tournez votre téléphone en mode paysage pour utiliser le plein écran',
+        rotateDevice: 'Tournez votre téléphone en mode paysage pour continuer, ou quittez le plein écran',
         note: 'Note',
         interval: 'Intervalle',
         the: 'la',
@@ -264,7 +264,7 @@
         playOneByOne: 'Tocar las notas una por una',
         fullscreen: 'Pantalla completa',
         exitFullscreen: 'Salir de pantalla completa',
-        rotateDevice: 'Gira el teléfono en horizontal para usar la pantalla completa',
+        rotateDevice: 'Gira el teléfono en horizontal para continuar, o sal de la pantalla completa',
         note: 'Nota',
         interval: 'Intervalo',
         the: 'la',
@@ -318,7 +318,7 @@
         playOneByOne: 'Noten einzeln spielen',
         fullscreen: 'Vollbild',
         exitFullscreen: 'Vollbild beenden',
-        rotateDevice: 'Drehe dein Handy ins Querformat, um den Vollbildmodus zu nutzen',
+        rotateDevice: 'Drehe dein Handy ins Querformat, um fortzufahren, oder beende den Vollbildmodus',
         note: 'Note',
         interval: 'Intervall',
         the: 'die',
@@ -548,7 +548,29 @@
         else enterFullscreen();
       };
 
-      const showRotatePrompt = isFullscreen && isMobile && isPortrait;
+      const showRotatePrompt = isFullscreen && isPortrait;
+
+      useEffect(() => {
+        if (!isFullscreen || !pianoAreaRef.current) {
+          setPianoAreaHeight(88);
+          return;
+        }
+        const updateHeight = () => {
+          if (pianoAreaRef.current) {
+            setPianoAreaHeight(Math.floor(pianoAreaRef.current.clientHeight));
+          }
+        };
+        updateHeight();
+        const observer = new ResizeObserver(updateHeight);
+        observer.observe(pianoAreaRef.current);
+        window.addEventListener('resize', updateHeight);
+        window.addEventListener('orientationchange', updateHeight);
+        return () => {
+          observer.disconnect();
+          window.removeEventListener('resize', updateHeight);
+          window.removeEventListener('orientationchange', updateHeight);
+        };
+      }, [isFullscreen, gameState, isPortrait]);
       
       // Nuovo Sistema Punteggi: Streak di Stelle e Record
       const [stats, setStats] = useState({
@@ -580,7 +602,9 @@
       );
       
       const audioCtxRef = useRef(null);
-      const pianoRef = useRef(null); // Ref per il container del piano (per i tasti freccia)
+      const pianoRef = useRef(null);
+      const pianoAreaRef = useRef(null);
+      const [pianoAreaHeight, setPianoAreaHeight] = useState(88);
 
       const initAudio = () => {
         if (!audioCtxRef.current) {
@@ -868,12 +892,16 @@
           ? Math.max(36, Math.floor((layoutSpan - 24) / 14))
           : 56;
         const BLACK_KEY_WIDTH = Math.round(WHITE_KEY_WIDTH * (32 / 56));
-        const WHITE_KEY_HEIGHT = isFullscreen ? 88 : 256;
-        const BLACK_KEY_HEIGHT = isFullscreen ? 54 : 160;
+        const WHITE_KEY_HEIGHT = isFullscreen
+          ? Math.max(72, pianoAreaHeight)
+          : 256;
+        const BLACK_KEY_HEIGHT = isFullscreen
+          ? Math.round(WHITE_KEY_HEIGHT * 0.625)
+          : 160;
         const pianoWidth = 14 * WHITE_KEY_WIDTH;
         
         return (
-          <div className={`flex flex-col w-full max-w-full ${isFullscreen ? 'gap-1 shrink-0' : 'gap-3'}`}>
+          <div className={`flex flex-col w-full max-w-full ${isFullscreen ? 'h-full min-h-0 justify-end' : 'gap-3'}`}>
             
             {!isFullscreen && (
               <div className="flex justify-between items-center px-1">
@@ -897,10 +925,10 @@
               </div>
             )}
 
-            <div className={`relative w-full max-w-full ${isFullscreen ? 'flex justify-center' : 'rounded-b-xl border-b border-slate-800'}`}>
+            <div className={`relative w-full ${isFullscreen ? 'h-full flex justify-center items-end' : 'max-w-full rounded-b-xl border-b border-slate-800'}`}>
               <div
                 ref={pianoRef}
-                className={`w-full ${isFullscreen ? 'overflow-hidden' : 'overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x'}`}
+                className={`w-full ${isFullscreen ? 'h-full overflow-hidden flex justify-center items-end' : 'overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x'}`}
               >
                 <div
                   className="relative mx-auto select-none"
@@ -936,7 +964,7 @@
                           left: `${leftPosition}px`,
                           width: `${isWhite ? WHITE_KEY_WIDTH : BLACK_KEY_WIDTH}px`,
                           height: `${isWhite ? WHITE_KEY_HEIGHT : BLACK_KEY_HEIGHT}px`,
-                          paddingBottom: isFullscreen ? '4px' : '16px',
+                          paddingBottom: isFullscreen ? '6px' : '16px',
                           backgroundColor: isWhite
                             ? (isSelected ? whiteSelected : whiteDefault)
                             : (isSelected ? blackSelected : blackDefault),
@@ -1037,15 +1065,15 @@
 
       if (showRotatePrompt) {
         return (
-          <div className="fixed inset-0 z-50 bg-slate-900 text-slate-100 font-sans flex flex-col items-center justify-center p-8 text-center gap-6">
+          <div className="fixed inset-0 z-[100] bg-slate-900 text-slate-100 font-sans flex flex-col items-center justify-center p-8 text-center gap-6">
             <div className="relative">
-              <Smartphone size={64} className="text-indigo-400" />
-              <RotateCw size={28} className="absolute -right-3 -top-3 text-amber-400 animate-spin" style={{ animationDuration: '3s' }} />
+              <Smartphone size={72} className="text-indigo-400" />
+              <RotateCw size={32} className="absolute -right-4 -top-4 text-amber-400 animate-spin" style={{ animationDuration: '3s' }} />
             </div>
-            <p className="text-lg text-slate-300 max-w-xs leading-relaxed">{t.rotateDevice}</p>
+            <p className="text-xl text-slate-200 max-w-sm leading-relaxed font-medium">{t.rotateDevice}</p>
             <button
               onClick={exitFullscreen}
-              className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/30"
             >
               <Minimize2 size={20} />
               {t.exitFullscreen}
@@ -1111,7 +1139,7 @@
               </div>
               
               <div className={`flex items-center shrink-0 ${isFullscreen ? 'gap-1.5' : 'gap-3 w-full md:w-auto justify-center md:justify-end'}`}>
-                {isMobile && fullscreenBtn(true)}
+                {isFullscreen && fullscreenBtn(true)}
                 {!isFullscreen && langSelector()}
                 {statsBlock(isFullscreen)}
               </div>
@@ -1325,7 +1353,12 @@
                   </div>
 
                   {/* Pianoforte Interattivo */}
-                  {renderPiano()}
+                  <div
+                    ref={isFullscreen ? pianoAreaRef : null}
+                    className={isFullscreen ? 'flex-1 min-h-0 w-full flex flex-col' : ''}
+                  >
+                    {renderPiano()}
+                  </div>
 
                 </div>
               )}
