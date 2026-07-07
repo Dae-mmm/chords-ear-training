@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Ear Training Chords</title>
   
   <!-- Tailwind CSS (Caricato via CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html.fullscreen-active, html.fullscreen-active body {
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+  </style>
   
   <!-- React & ReactDOM (Caricati via CDN) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -92,6 +100,8 @@
         scrollRight: 'Scroll right',
         playTogether: 'Play all notes together',
         playOneByOne: 'Play notes one by one',
+        fullscreen: 'Fullscreen',
+        exitFullscreen: 'Exit fullscreen',
         note: 'Note',
         interval: 'Interval',
         the: 'the',
@@ -143,6 +153,8 @@
         scrollRight: 'Scorri a destra',
         playTogether: 'Suona tutte le note insieme',
         playOneByOne: 'Suona le note una per una',
+        fullscreen: 'Schermo intero',
+        exitFullscreen: 'Esci da schermo intero',
         note: 'Nota',
         interval: 'Intervallo',
         the: 'il',
@@ -194,6 +206,8 @@
         scrollRight: 'Défiler à droite',
         playTogether: 'Jouer toutes les notes ensemble',
         playOneByOne: 'Jouer les notes une par une',
+        fullscreen: 'Plein écran',
+        exitFullscreen: 'Quitter le plein écran',
         note: 'Note',
         interval: 'Intervalle',
         the: 'la',
@@ -245,6 +259,8 @@
         scrollRight: 'Desplazar a la derecha',
         playTogether: 'Tocar todas las notas juntas',
         playOneByOne: 'Tocar las notas una por una',
+        fullscreen: 'Pantalla completa',
+        exitFullscreen: 'Salir de pantalla completa',
         note: 'Nota',
         interval: 'Intervalo',
         the: 'la',
@@ -296,6 +312,8 @@
         scrollRight: 'Nach rechts scrollen',
         playTogether: 'Alle Noten zusammen spielen',
         playOneByOne: 'Noten einzeln spielen',
+        fullscreen: 'Vollbild',
+        exitFullscreen: 'Vollbild beenden',
         note: 'Note',
         interval: 'Intervall',
         the: 'die',
@@ -372,6 +390,8 @@
     // Nuove Icone per lo scorrimento
     const ChevronLeft = (props) => <Icon {...props}><polyline points="15 18 9 12 15 6" /></Icon>;
     const ChevronRight = (props) => <Icon {...props}><polyline points="9 18 15 12 9 6" /></Icon>;
+    const Maximize2 = (props) => <Icon {...props}><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></Icon>;
+    const Minimize2 = (props) => <Icon {...props}><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></Icon>;
 
     // Frequenze delle note per l'AudioContext
     const FREQUENCIES = {
@@ -460,6 +480,63 @@
         const id = setInterval(() => setTick(t => t + 1), 200);
         return () => clearInterval(id);
       }, [gameState, startTime]);
+
+      useEffect(() => {
+        const updateLayout = () => {
+          const mobile = window.matchMedia('(max-width: 768px)').matches;
+          const portrait = window.innerHeight > window.innerWidth;
+          setIsMobile(mobile);
+          setIsPortrait(portrait);
+          const span = (isFullscreen && mobile && portrait) ? window.innerHeight : window.innerWidth;
+          setLayoutSpan(span);
+        };
+
+        updateLayout();
+        window.addEventListener('resize', updateLayout);
+        window.addEventListener('orientationchange', updateLayout);
+        return () => {
+          window.removeEventListener('resize', updateLayout);
+          window.removeEventListener('orientationchange', updateLayout);
+        };
+      }, [isFullscreen]);
+
+      useEffect(() => {
+        document.documentElement.classList.toggle('fullscreen-active', isFullscreen);
+        return () => document.documentElement.classList.remove('fullscreen-active');
+      }, [isFullscreen]);
+
+      useEffect(() => {
+        const onFullscreenChange = () => {
+          if (!document.fullscreenElement) {
+            setIsFullscreen(false);
+          }
+        };
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+      }, []);
+
+      const enterFullscreen = async () => {
+        setIsFullscreen(true);
+        try {
+          await document.documentElement.requestFullscreen?.();
+        } catch (_) { /* fallback to CSS fullscreen */ }
+      };
+
+      const exitFullscreen = async () => {
+        setIsFullscreen(false);
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen?.();
+          }
+        } catch (_) { /* ignore */ }
+      };
+
+      const toggleFullscreen = () => {
+        if (isFullscreen) exitFullscreen();
+        else enterFullscreen();
+      };
+
+      const useRotatedLayout = isFullscreen && isMobile && isPortrait;
       
       // Nuovo Sistema Punteggi: Streak di Stelle e Record
       const [stats, setStats] = useState({
@@ -483,6 +560,12 @@
       const [, setTick] = useState(0);
       const [errorStatus, setErrorStatus] = useState(false);
       const [mistakeMade, setMistakeMade] = useState(false);
+      const [isFullscreen, setIsFullscreen] = useState(false);
+      const [isMobile, setIsMobile] = useState(false);
+      const [isPortrait, setIsPortrait] = useState(false);
+      const [layoutSpan, setLayoutSpan] = useState(
+        typeof window !== 'undefined' ? window.innerWidth : 1024
+      );
       
       const audioCtxRef = useRef(null);
       const pianoRef = useRef(null); // Ref per il container del piano (per i tasti freccia)
@@ -769,40 +852,48 @@
 
       const renderPiano = () => {
         let whiteKeyIndex = 0;
-        const WHITE_KEY_WIDTH = 56;
-        const BLACK_KEY_WIDTH = 32;
+        const WHITE_KEY_WIDTH = isFullscreen
+          ? Math.max(36, Math.floor((layoutSpan - 24) / 14))
+          : 56;
+        const BLACK_KEY_WIDTH = Math.round(WHITE_KEY_WIDTH * (32 / 56));
+        const WHITE_KEY_HEIGHT = isFullscreen ? 88 : 256;
+        const BLACK_KEY_HEIGHT = isFullscreen ? 54 : 160;
+        const pianoWidth = 14 * WHITE_KEY_WIDTH;
         
         return (
-          <div className="flex flex-col gap-3 w-full max-w-full">
+          <div className={`flex flex-col w-full max-w-full ${isFullscreen ? 'gap-1 shrink-0' : 'gap-3'}`}>
             
-            {/* Barra di controllo scorrimento (Sopra la tastiera) */}
-            <div className="flex justify-between items-center px-1">
-              <span className="text-xs text-slate-500 font-medium uppercase tracking-wider ml-1">{t.keyboardScroll}</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => scrollPiano('left')}
-                  className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
-                  title={t.scrollLeft}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={() => scrollPiano('right')}
-                  className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
-                  title={t.scrollRight}
-                >
-                  <ChevronRight size={20} />
-                </button>
+            {!isFullscreen && (
+              <div className="flex justify-between items-center px-1">
+                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider ml-1">{t.keyboardScroll}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => scrollPiano('left')}
+                    className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
+                    title={t.scrollLeft}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => scrollPiano('right')}
+                    className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
+                    title={t.scrollRight}
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Container Tastiera */}
-            <div className="relative w-full max-w-full rounded-b-xl border-b border-slate-800">
+            <div className={`relative w-full max-w-full ${isFullscreen ? 'flex justify-center' : 'rounded-b-xl border-b border-slate-800'}`}>
               <div
                 ref={pianoRef}
-                className="w-full overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x"
+                className={`w-full ${isFullscreen ? 'overflow-hidden' : 'overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x'}`}
               >
-                <div className="relative h-64 mx-auto select-none" style={{ width: `${14 * WHITE_KEY_WIDTH}px` }}>
+                <div
+                  className="relative mx-auto select-none"
+                  style={{ width: `${pianoWidth}px`, height: `${WHITE_KEY_HEIGHT}px` }}
+                >
                   {pianoKeys.map((key) => {
                     const isWhite = key.type === 'white';
                     const isSelected = selectedNotes.includes(key.id); 
@@ -819,14 +910,19 @@
                       <div
                         key={key.id}
                         onClick={() => assignNoteToActiveBox(key.id)}
-                        className={`absolute cursor-pointer border flex flex-col justify-end pb-4 items-center transition-colors duration-150 select-none touch-pan-x
+                        className={`absolute cursor-pointer border flex flex-col justify-end items-center transition-colors duration-150 select-none touch-manipulation
                           ${isWhite 
-                            ? `h-64 w-[56px] rounded-b-lg border-slate-300 z-0 active:bg-slate-200 ${isSelected ? 'bg-indigo-200' : 'bg-white hover:bg-slate-100'}` 
-                            : `h-40 w-[32px] rounded-b-md border-black z-10 active:bg-slate-600 ${isSelected ? 'bg-indigo-600' : 'bg-slate-900 hover:bg-slate-700'}`
+                            ? `rounded-b-lg border-slate-300 z-0 active:bg-slate-200 ${isSelected ? 'bg-indigo-200' : 'bg-white hover:bg-slate-100'}` 
+                            : `rounded-b-md border-black z-10 active:bg-slate-600 ${isSelected ? 'bg-indigo-600' : 'bg-slate-900 hover:bg-slate-700'}`
                           }`}
-                        style={{ left: `${leftPosition}px` }}
+                        style={{
+                          left: `${leftPosition}px`,
+                          width: `${isWhite ? WHITE_KEY_WIDTH : BLACK_KEY_WIDTH}px`,
+                          height: `${isWhite ? WHITE_KEY_HEIGHT : BLACK_KEY_HEIGHT}px`,
+                          paddingBottom: isFullscreen ? '4px' : '16px'
+                        }}
                       >
-                        <span className={`text-xs font-semibold pointer-events-none ${isWhite ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <span className={`font-semibold pointer-events-none ${isFullscreen ? 'text-[9px]' : 'text-xs'} ${isWhite ? 'text-slate-500' : 'text-slate-400'}`}>
                           {isWhite && key.label}
                         </span>
                       </div>
@@ -844,23 +940,54 @@
       const currentStarsPotential = calculatePotentialStars();
 
       return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4 font-sans">
-          <div className="max-w-4xl w-full bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-700">
+        <div
+          className={`bg-slate-900 text-slate-100 font-sans ${
+            isFullscreen
+              ? 'fixed z-50 overflow-hidden flex flex-col'
+              : 'min-h-screen flex items-center justify-center p-4'
+          }`}
+          style={isFullscreen ? (useRotatedLayout ? {
+            top: 0,
+            left: 0,
+            width: '100vh',
+            height: '100vw',
+            maxHeight: '100dvh',
+            maxWidth: '100dvw',
+            transform: 'rotate(90deg) translateY(-100%)',
+            transformOrigin: 'top left',
+          } : {
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            maxHeight: '100dvh',
+          }) : undefined}
+        >
+          <div className={`w-full flex flex-col ${
+            isFullscreen
+              ? 'h-full min-h-0 bg-slate-900 border-0 shadow-none'
+              : 'max-w-4xl bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-700'
+          }`}>
             
             {/* Header App */}
-            <div className="bg-slate-900/50 p-6 border-b border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                  <Volume2 size={24} />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold">{t.appName}</h1>
-                  <div className="flex flex-wrap gap-2 mt-2">
+            <div className={`bg-slate-900/50 border-b border-slate-700 flex items-center justify-between gap-2 shrink-0 ${
+              isFullscreen ? 'p-2' : 'p-6 flex-col md:flex-row gap-4'
+            }`}>
+              <div className={`flex items-center gap-2 ${isFullscreen ? 'min-w-0 flex-1' : 'gap-3 w-full md:w-auto'}`}>
+                {!isFullscreen && (
+                  <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                    <Volume2 size={24} />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  {!isFullscreen && <h1 className="text-xl font-bold">{t.appName}</h1>}
+                  <div className={`flex flex-wrap gap-1 ${isFullscreen ? '' : 'mt-2 gap-2'}`}>
                     {DIFFICULTIES.map(diff => (
                       <button
                         key={diff}
                         onClick={() => handleDifficultyChange(diff)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors
+                        className={`rounded-full font-semibold transition-colors ${
+                          isFullscreen ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'
+                        }
                           ${difficulty === diff 
                             ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' 
                             : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
@@ -873,208 +1000,241 @@
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-center md:justify-end">
-                {/* Language Selector */}
-                <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1.5 rounded-xl border border-slate-700">
-                  {LANGUAGES.map(l => (
-                    <button
-                      key={l.code}
-                      onClick={() => setLang(l.code)}
-                      className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors
-                        ${lang === l.code
-                          ? 'bg-indigo-600 text-white'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-                        }`}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
+              <div className={`flex items-center shrink-0 ${isFullscreen ? 'gap-1.5' : 'gap-3 w-full md:w-auto justify-center md:justify-end'}`}>
+                {isMobile && (
+                  <button
+                    onClick={toggleFullscreen}
+                    className={`bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-600 ${
+                      isFullscreen ? 'p-1.5' : 'p-2'
+                    }`}
+                    title={isFullscreen ? t.exitFullscreen : t.fullscreen}
+                    aria-label={isFullscreen ? t.exitFullscreen : t.fullscreen}
+                  >
+                    {isFullscreen ? <Minimize2 size={isFullscreen ? 16 : 20} /> : <Maximize2 size={20} />}
+                  </button>
+                )}
 
-              {/* Display Stats: Streak di Stelle & Record */}
-              <div className="flex items-center gap-4 bg-slate-800/80 px-4 py-2.5 rounded-2xl border border-slate-700 shrink-0 justify-center">
-                <div className="flex items-center gap-1.5 text-orange-400" title={t.currentStreak}>
-                  <Flame size={20} className={stats[difficulty].current > 0 && gameState === 'playing' ? "animate-pulse" : ""} />
-                  <span className="font-bold text-lg leading-none">{stats[difficulty].current}</span>
-                  <Star size={14} className="fill-orange-400 opacity-80" />
-                </div>
-                <div className="w-px h-6 bg-slate-600"></div>
-                <div className="flex items-center gap-1.5 text-amber-400" title={t.bestStreak}>
-                  <Trophy size={20} />
-                  <span className="font-bold text-lg leading-none">{stats[difficulty].best}</span>
-                  <Star size={14} className="fill-amber-400 opacity-80" />
-                </div>
+                {!isFullscreen && (
+                  <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1.5 rounded-xl border border-slate-700">
+                    {LANGUAGES.map(l => (
+                      <button
+                        key={l.code}
+                        onClick={() => setLang(l.code)}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors
+                          ${lang === l.code
+                            ? 'bg-indigo-600 text-white'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                          }`}
+                      >
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className={`flex items-center bg-slate-800/80 rounded-2xl border border-slate-700 shrink-0 justify-center ${
+                  isFullscreen ? 'gap-2 px-2 py-1' : 'gap-4 px-4 py-2.5'
+                }`}>
+                  <div className="flex items-center gap-1 text-orange-400" title={t.currentStreak}>
+                    <Flame size={isFullscreen ? 14 : 20} className={stats[difficulty].current > 0 && gameState === 'playing' ? "animate-pulse" : ""} />
+                    <span className={`font-bold leading-none ${isFullscreen ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].current}</span>
+                    <Star size={isFullscreen ? 10 : 14} className="fill-orange-400 opacity-80" />
+                  </div>
+                  <div className="w-px h-4 bg-slate-600"></div>
+                  <div className="flex items-center gap-1 text-amber-400" title={t.bestStreak}>
+                    <Trophy size={isFullscreen ? 14 : 20} />
+                    <span className={`font-bold leading-none ${isFullscreen ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].best}</span>
+                    <Star size={isFullscreen ? 10 : 14} className="fill-amber-400 opacity-80" />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Area di Gioco */}
-            <div className="p-8">
+            <div className={`flex-1 min-h-0 flex flex-col ${isFullscreen ? 'p-2 overflow-hidden' : 'p-8'}`}>
               {gameState === 'idle' ? (
-                <div className="text-center py-10">
-                  <div className="w-24 h-24 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Play size={48} className="text-indigo-400 ml-2" />
+                <div className={`text-center flex flex-col items-center justify-center flex-1 ${isFullscreen ? 'py-4' : 'py-10'}`}>
+                  <div className={`bg-indigo-500/20 rounded-full flex items-center justify-center mb-4 ${isFullscreen ? 'w-14 h-14' : 'w-24 h-24 mb-6'}`}>
+                    <Play size={isFullscreen ? 28 : 48} className="text-indigo-400 ml-1" />
                   </div>
-                  <h2 className="text-3xl font-bold mb-2">{t.level} {t.difficulties[difficulty]}</h2>
-                  <p className="text-slate-400 max-w-md mx-auto mb-8">
-                    {t.descriptions[difficulty]}
-                  </p>
+                  <h2 className={`font-bold mb-2 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>{t.level} {t.difficulties[difficulty]}</h2>
+                  {!isFullscreen && (
+                    <p className="text-slate-400 max-w-md mx-auto mb-8">
+                      {t.descriptions[difficulty]}
+                    </p>
+                  )}
                   <button 
                     onClick={startGame}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-3 mx-auto"
+                    className={`bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2 ${
+                      isFullscreen ? 'px-5 py-2.5 text-sm' : 'px-8 py-4 text-lg gap-3'
+                    }`}
                   >
-                    <Play size={24} />
+                    <Play size={isFullscreen ? 18 : 24} />
                     {t.startGame}
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-8">
+                <div className={`flex flex-col flex-1 min-h-0 ${isFullscreen ? 'gap-2' : 'gap-8'}`}>
                   
                   {/* Controlli Superiori */}
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-slate-700/30 p-6 rounded-2xl border border-slate-700">
+                  <div className={`flex bg-slate-700/30 rounded-2xl border border-slate-700 shrink-0 ${
+                    isFullscreen
+                      ? 'flex-row items-center justify-between gap-2 p-2'
+                      : 'flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6'
+                  }`}>
                     
-                    {/* Riascolta Originale (Senza penalità) */}
                     <button 
                       onClick={playTargetChord}
-                      className="flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-6 py-4 rounded-xl font-bold transition-colors w-full md:w-auto justify-center group shadow-md"
+                      className={`flex items-center bg-slate-700 hover:bg-slate-600 rounded-xl font-bold transition-colors group shadow-md ${
+                        isFullscreen
+                          ? 'gap-2 px-3 py-2 text-xs shrink-0'
+                          : 'gap-3 px-6 py-4 w-full md:w-auto justify-center'
+                      }`}
                     >
-                      <Volume2 className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                      <Volume2 size={isFullscreen ? 16 : 24} className="text-indigo-400 group-hover:scale-110 transition-transform shrink-0" />
                       <div className="text-left">
                         <div className="leading-tight">
                           {difficulty === 'beginner' ? t.theNote : difficulty === 'intermediate' ? t.theInterval : t.theChord}
                         </div>
-                        <div className="text-sm text-slate-400 font-normal">{t.guess}</div>
+                        {!isFullscreen && <div className="text-sm text-slate-400 font-normal">{t.guess}</div>}
                       </div>
                     </button>
 
-                    {/* Box delle Note e Ascolto Utente */}
-                    <div className="flex flex-col items-center md:items-end w-full md:w-auto gap-4">
-                      <div className="flex flex-col items-center md:items-end">
+                    <div className={`flex items-center ${isFullscreen ? 'gap-2 flex-1 justify-center min-w-0' : 'flex-col md:items-end w-full md:w-auto gap-4'}`}>
+                      {!isFullscreen && (
                         <p className="text-sm text-slate-400 mb-2 font-medium">
-                           {difficulty === 'beginner' ? t.findNote : difficulty === 'intermediate' ? t.completeInterval : t.composeChord}
+                          {difficulty === 'beginner' ? t.findNote : difficulty === 'intermediate' ? t.completeInterval : t.composeChord}
                         </p>
-                        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
-                          {selectedNotes.map((noteId, i) => {
-                            const keyInfo = pianoKeys.find(k => k.id === noteId);
-                            const isActive = activeBoxIndex === i && gameState === 'playing';
-                            const isLocked = difficulty === 'intermediate' && i === 0;
-                            
-                            return (
-                              <div 
-                                key={i}
-                                onClick={() => selectBox(i)}
-                                className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold transition-all 
-                                  ${isLocked 
-                                    ? 'border-slate-500 bg-slate-700/50 cursor-not-allowed opacity-80' 
-                                    : isActive 
-                                      ? 'border-amber-400 ring-4 ring-amber-400/20 scale-105 cursor-pointer' 
-                                      : 'border-slate-600 hover:border-slate-400 cursor-pointer'
-                                  }
-                                  ${noteId && !isLocked
-                                    ? 'bg-indigo-600/20 text-indigo-300 shadow-inner' 
-                                    : noteId && isLocked 
-                                      ? 'text-slate-300' 
-                                      : 'bg-slate-800/80 text-transparent'
-                                  }
-                                `}
-                              >
-                                {keyInfo ? keyInfo.label : ''}
-                              </div>
-                            );
-                          })}
-                        </div>
+                      )}
+                      <div className={`flex flex-wrap justify-center ${isFullscreen ? 'gap-1' : 'gap-2 sm:gap-3'}`}>
+                        {selectedNotes.map((noteId, i) => {
+                          const keyInfo = pianoKeys.find(k => k.id === noteId);
+                          const isActive = activeBoxIndex === i && gameState === 'playing';
+                          const isLocked = difficulty === 'intermediate' && i === 0;
+                          
+                          return (
+                            <div 
+                              key={i}
+                              onClick={() => selectBox(i)}
+                              className={`border-2 rounded-xl flex items-center justify-center font-bold transition-all 
+                                ${isFullscreen ? 'w-9 h-9 text-sm' : 'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-lg sm:text-xl'}
+                                ${isLocked 
+                                  ? 'border-slate-500 bg-slate-700/50 cursor-not-allowed opacity-80' 
+                                  : isActive 
+                                    ? 'border-amber-400 ring-4 ring-amber-400/20 scale-105 cursor-pointer' 
+                                    : 'border-slate-600 hover:border-slate-400 cursor-pointer'
+                                }
+                                ${noteId && !isLocked
+                                  ? 'bg-indigo-600/20 text-indigo-300 shadow-inner' 
+                                  : noteId && isLocked 
+                                    ? 'text-slate-300' 
+                                    : 'bg-slate-800/80 text-transparent'
+                                }
+                              `}
+                            >
+                              {keyInfo ? keyInfo.label : ''}
+                            </div>
+                          );
+                        })}
                       </div>
-                      
-                      {/* Pulsanti per ascoltare le note correntemente selezionate */}
-                      <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-2 md:mt-0">
-                        <button 
-                          onClick={playUserChord}
-                          disabled={!selectedNotes.some(n => n !== null)}
-                          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
-                            ${selectedNotes.some(n => n !== null) 
-                              ? 'bg-slate-600 hover:bg-slate-500 text-white' 
-                              : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
-                            }`}
-                          title={t.playTogether}
-                        >
-                          <Music size={16} className={selectedNotes.some(n => n !== null) ? 'text-amber-400' : ''} />
-                          {difficulty === 'beginner' ? t.replay : difficulty === 'intermediate' ? t.harmonic : t.chord}
-                        </button>
-                        {difficulty !== 'beginner' && (
+
+                      {!isFullscreen && (
+                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-2 md:mt-0">
                           <button 
-                            onClick={playUserArpeggio}
+                            onClick={playUserChord}
                             disabled={!selectedNotes.some(n => n !== null)}
                             className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
                               ${selectedNotes.some(n => n !== null) 
                                 ? 'bg-slate-600 hover:bg-slate-500 text-white' 
                                 : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
                               }`}
-                            title={t.playOneByOne}
+                            title={t.playTogether}
                           >
-                            <Play size={16} className={selectedNotes.some(n => n !== null) ? 'text-emerald-400' : ''} />
-                            {difficulty === 'intermediate' ? t.melodic : t.arpeggio}
+                            <Music size={16} className={selectedNotes.some(n => n !== null) ? 'text-amber-400' : ''} />
+                            {difficulty === 'beginner' ? t.replay : difficulty === 'intermediate' ? t.harmonic : t.chord}
                           </button>
-                        )}
-                      </div>
+                          {difficulty !== 'beginner' && (
+                            <button 
+                              onClick={playUserArpeggio}
+                              disabled={!selectedNotes.some(n => n !== null)}
+                              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
+                                ${selectedNotes.some(n => n !== null) 
+                                  ? 'bg-slate-600 hover:bg-slate-500 text-white' 
+                                  : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
+                                }`}
+                              title={t.playOneByOne}
+                            >
+                              <Play size={16} className={selectedNotes.some(n => n !== null) ? 'text-emerald-400' : ''} />
+                              {difficulty === 'intermediate' ? t.melodic : t.arpeggio}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Area Messaggi e Invia */}
-                  <div className="flex flex-col items-center justify-center h-28">
+                  <div className={`flex flex-col items-center justify-center shrink-0 ${isFullscreen ? 'h-14' : 'h-28'}`}>
                     {gameState === 'playing' ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-400">
+                      <div className={`flex items-center ${isFullscreen ? 'flex-row gap-3' : 'flex-col gap-3'}`}>
+                        <div className={`flex items-center gap-2 font-semibold text-slate-400 ${isFullscreen ? 'text-xs' : 'text-sm'}`}>
                           {t.starsAtStake}
                           <div className="flex gap-1">
                             {[...Array(3)].map((_, i) => (
                               <Star 
                                 key={i} 
-                                size={18} 
+                                size={isFullscreen ? 14 : 18} 
                                 className={`transition-all duration-300 ${i < currentStarsPotential ? "text-amber-400 fill-amber-400" : "text-slate-600"}`} 
                               />
                             ))}
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className={`flex items-center ${isFullscreen ? 'gap-2' : 'flex-col sm:flex-row gap-4'}`}>
                           <button
                             onClick={checkAnswer}
                             disabled={!isReadyToSubmit}
-                            className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-lg transition-all
+                            className={`flex items-center gap-2 rounded-xl font-bold transition-all ${
+                              isFullscreen ? 'px-4 py-2 text-sm' : 'px-8 py-3 text-lg'
+                            }
                               ${isReadyToSubmit
                                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30'
                                 : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                               }`}
                           >
-                            <Check size={24} />
+                            <Check size={isFullscreen ? 18 : 24} />
                             {t.submit}
                           </button>
                           {errorStatus && (
-                            <span className="text-rose-400 flex items-center gap-2 font-medium animate-pulse">
-                              <AlertCircle size={20} />
+                            <span className={`text-rose-400 flex items-center gap-1 font-medium animate-pulse ${isFullscreen ? 'text-xs' : 'text-sm gap-2'}`}>
+                              <AlertCircle size={isFullscreen ? 16 : 20} />
                               {t.minusOneStar}
                             </span>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
-                        <div className="text-emerald-400 font-bold text-xl sm:text-2xl flex flex-col items-center gap-2 text-center">
+                      <div className={`flex items-center animate-in fade-in slide-in-from-bottom-4 ${isFullscreen ? 'flex-row gap-3' : 'flex-col gap-4'}`}>
+                        <div className={`text-emerald-400 font-bold flex items-center gap-2 text-center ${isFullscreen ? 'text-sm' : 'text-xl sm:text-2xl flex-col gap-2'}`}>
                           <div className="flex items-center gap-2">
-                            <Check size={32} className="shrink-0" />
-                            {t.exact} {difficulty === 'beginner' ? t.the : t.a} {currentChord.name}
+                            <Check size={isFullscreen ? 20 : 32} className="shrink-0" />
+                            <span className={isFullscreen ? 'truncate max-w-[40vw]' : ''}>
+                              {t.exact} {difficulty === 'beginner' ? t.the : t.a} {currentChord.name}
+                            </span>
                           </div>
-                          {earnedStarsForRound > 0 ? (
-                            <div className="flex items-center gap-1 text-amber-400 text-lg">
-                              {t.earnedStars.replace('{n}', earnedStarsForRound)} <Star size={20} className="fill-amber-400" />
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-slate-400 text-lg">
-                              {t.noStars}
-                            </div>
+                          {!isFullscreen && (
+                            earnedStarsForRound > 0 ? (
+                              <div className="flex items-center gap-1 text-amber-400 text-lg">
+                                {t.earnedStars.replace('{n}', earnedStarsForRound)} <Star size={20} className="fill-amber-400" />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 text-slate-400 text-lg">
+                                {t.noStars}
+                              </div>
+                            )
                           )}
                         </div>
-                        <div className="flex items-center gap-4">
-                          {timeTaken && (
+                        <div className={`flex items-center ${isFullscreen ? 'gap-2' : 'gap-4'}`}>
+                          {timeTaken && !isFullscreen && (
                             <div className="flex items-center gap-2 bg-slate-800 text-slate-300 px-4 py-3 rounded-xl font-medium border border-slate-700">
                               <Clock size={18} className="text-indigo-400" />
                               {timeTaken} {t.sec}
@@ -1082,9 +1242,11 @@
                           )}
                           <button
                             onClick={startGame}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2"
+                            className={`bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2 ${
+                              isFullscreen ? 'px-4 py-2 text-sm' : 'px-6 py-3'
+                            }`}
                           >
-                            <RefreshCw size={20} />
+                            <RefreshCw size={isFullscreen ? 16 : 20} />
                             {t.next}
                           </button>
                         </div>
