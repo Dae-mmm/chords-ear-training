@@ -646,6 +646,20 @@
       { ratio: 6, gain: 0.03 },
     ];
 
+    // Profilo timbrico: le note acute perdono armonici alti e brillantezza
+    const getNoteToneProfile = (frequency) => {
+      const trebleTame = Math.max(0.22, Math.min(1, 420 / frequency));
+      const volumeScale = Math.max(0.68, Math.min(1, 460 / frequency));
+      return {
+        trebleTame,
+        volumeScale,
+        brightFreq: Math.min(frequency * (1.8 + 2.2 * trebleTame), 1600 + 1800 * trebleTame),
+        darkFreq: Math.max(frequency * (1.05 + 0.25 * trebleTame), 140),
+        highShelfGain: frequency > 420 ? -2.5 - ((frequency - 420) / 90) : 0,
+        harmonicScale: (ratio) => (ratio === 1 ? 1 : Math.pow(trebleTame, (ratio - 1) * 0.9)),
+      };
+    };
+
     // Catalogo degli accordi statici (Principiante e Intermedio sono generativi)
     const CHORD_CATEGORIES = {
       advanced: [
@@ -856,8 +870,8 @@
 
           const highCut = ctx.createBiquadFilter();
           highCut.type = 'lowpass';
-          highCut.frequency.value = 5200;
-          highCut.Q.value = 0.4;
+          highCut.frequency.value = 4000;
+          highCut.Q.value = 0.35;
 
           const compressor = ctx.createDynamicsCompressor();
           compressor.threshold.setValueAtTime(-20, ctx.currentTime);
@@ -899,32 +913,44 @@
         if (!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
         const t0 = ctx.currentTime + startTimeOffset;
+        const tone = getNoteToneProfile(frequency);
 
         const noteGain = ctx.createGain();
         noteGain.connect(ctx.masterGain);
 
-        const peak = volume * 0.5;
-        const body = peak * 0.38;
+        const peak = volume * 0.5 * tone.volumeScale;
+        const body = peak * 0.4;
         noteGain.gain.setValueAtTime(0.001, t0);
         noteGain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.001), t0 + 0.006);
-        noteGain.gain.exponentialRampToValueAtTime(Math.max(body, 0.001), t0 + 0.18);
+        noteGain.gain.exponentialRampToValueAtTime(Math.max(body, 0.001), t0 + 0.2);
         noteGain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.Q.value = 0.6;
-        const brightFreq = Math.min(frequency * 7, 7000);
-        const darkFreq = Math.max(frequency * 1.6, 180);
-        filter.frequency.setValueAtTime(brightFreq, t0);
-        filter.frequency.exponentialRampToValueAtTime(darkFreq, t0 + 0.45);
-        filter.connect(noteGain);
+        filter.Q.value = 0.45;
+        filter.frequency.setValueAtTime(tone.brightFreq, t0);
+        filter.frequency.exponentialRampToValueAtTime(Math.max(tone.darkFreq, 80), t0 + 0.55);
+
+        const output = ctx.createGain();
+        output.connect(noteGain);
+
+        if (tone.highShelfGain < -0.5) {
+          const highShelf = ctx.createBiquadFilter();
+          highShelf.type = 'highshelf';
+          highShelf.frequency.value = Math.min(2200, frequency * 2.2);
+          highShelf.gain.value = Math.max(tone.highShelfGain, -10);
+          filter.connect(highShelf);
+          highShelf.connect(output);
+        } else {
+          filter.connect(output);
+        }
 
         PIANO_HARMONICS.forEach(({ ratio, gain }) => {
           const osc = ctx.createOscillator();
-          osc.type = 'sine';
+          osc.type = ratio === 1 ? 'triangle' : 'sine';
           osc.frequency.setValueAtTime(frequency * ratio, t0);
           const harmonicGain = ctx.createGain();
-          harmonicGain.gain.value = gain;
+          harmonicGain.gain.value = gain * tone.harmonicScale(ratio);
           osc.connect(harmonicGain);
           harmonicGain.connect(filter);
           osc.start(t0);
