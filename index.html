@@ -947,15 +947,28 @@
 
         PIANO_HARMONICS.forEach(({ ratio, gain }) => {
           const osc = ctx.createOscillator();
-          osc.type = ratio === 1 ? 'triangle' : 'sine';
+          osc.type = 'sine';
           osc.frequency.setValueAtTime(frequency * ratio, t0);
           const harmonicGain = ctx.createGain();
-          harmonicGain.gain.value = gain * tone.harmonicScale(ratio);
+          harmonicGain.gain.value = gain * tone.harmonicScale(ratio) * (ratio === 2 && frequency > 480 ? 1.3 : 1);
           osc.connect(harmonicGain);
           harmonicGain.connect(filter);
           osc.start(t0);
           osc.stop(t0 + duration + 0.08);
         });
+      };
+
+      const playTargetNotes = (notes) => {
+        const chordVol = 0.34 / Math.sqrt(notes.length);
+        if (difficulty === 'intermediate') {
+          notes.forEach((noteId, i) => {
+            playTone(FREQUENCIES[noteId], 2.4, chordVol, i * 0.55);
+          });
+        } else {
+          notes.forEach(noteId => {
+            playTone(FREQUENCIES[noteId], 2.4, chordVol);
+          });
+        }
       };
 
       const playTargetChord = (countListen = true) => {
@@ -964,10 +977,7 @@
         }
         initAudio();
         if (currentChord) {
-          const chordVol = 0.34 / Math.sqrt(currentChord.notes.length);
-          currentChord.notes.forEach(noteId => {
-            playTone(FREQUENCIES[noteId], 2.4, chordVol);
-          });
+          playTargetNotes(currentChord.notes);
         }
       };
 
@@ -1061,10 +1071,7 @@
         setMistakeMade(false);
         
         setTimeout(() => {
-          const chordVol = 0.34 / Math.sqrt(targetChord.notes.length);
-          targetChord.notes.forEach(noteId => {
-            playTone(FREQUENCIES[noteId], 2.4, chordVol);
-          });
+          playTargetNotes(targetChord.notes);
         }, 100);
       };
 
