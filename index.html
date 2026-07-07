@@ -832,6 +832,72 @@
 
     const getChordKey = (chord) => `${chord.root}-${chord.type || chord.symbol}-${chord.notes.join(',')}`;
 
+    // Simboli musicali progressivi: dal più intuitivo al più "da spartito avanzato"
+    const DifficultyIcon = ({ diff, className = '' }) => {
+      const base = `inline-flex items-center justify-center leading-none select-none ${className}`;
+
+      switch (diff) {
+        case 'beginner':
+          return <span className={base} aria-hidden>♪</span>;
+
+        case 'intermediate':
+          return (
+            <span className={`${base} gap-px tracking-tighter`} aria-hidden>
+              <span>♩</span>
+              <span className="opacity-50 text-[0.55em] -mx-px">↗</span>
+              <span>♩</span>
+            </span>
+          );
+
+        case 'intermediate_plus':
+          return (
+            <span className={`${base} flex-col gap-0 text-[0.82em] leading-[0.58]`} aria-hidden>
+              <span>♩</span>
+              <span>♩</span>
+            </span>
+          );
+
+        case 'advanced':
+          return (
+            <span className={`${base} gap-px tracking-tighter text-[0.88em]`} aria-hidden>
+              <span>♩</span>
+              <span className="opacity-50 text-[0.5em] -mx-px">↗</span>
+              <span>♩</span>
+              <span className="opacity-50 text-[0.5em] -mx-px">↗</span>
+              <span>♩</span>
+            </span>
+          );
+
+        case 'advanced_plus':
+          return (
+            <span className={`${base} flex-col gap-0 text-[0.72em] leading-[0.52] font-serif`} aria-hidden>
+              <span>♩</span>
+              <span>♩</span>
+              <span>♩</span>
+            </span>
+          );
+
+        case 'pro':
+          return (
+            <span className={`${base} font-serif tracking-tight`} aria-hidden>
+              <span>°</span>
+              <span className="text-[0.62em] align-super leading-none">7</span>
+            </span>
+          );
+
+        case 'jazz':
+          return (
+            <span className={`${base} font-serif tracking-tighter text-[0.78em]`} aria-hidden>
+              <span>Δ</span>
+              <span className="text-[0.58em] align-super leading-none">7♯11</span>
+            </span>
+          );
+
+        default:
+          return null;
+      }
+    };
+
     function App() {
       const [lang, setLang] = useState(getStoredLang);
       const [gameState, setGameState] = useState('idle'); 
@@ -1447,8 +1513,9 @@
           <div className="flex items-center gap-2 mb-2">
             <Star size={compact ? 14 : 18} className="text-amber-400 fill-amber-400 shrink-0" />
             <h3 className={`font-bold text-slate-200 ${compact ? 'text-xs' : 'text-sm'}`}>{t.starsTitle}</h3>
-            <span className={`text-indigo-400 font-semibold ml-auto ${compact ? 'text-[10px]' : 'text-xs'}`}>
-              {t.difficulties[difficulty]}
+            <span className={`text-indigo-400 font-semibold ml-auto flex items-center gap-1.5 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+              <DifficultyIcon diff={difficulty} className={compact ? 'text-sm' : 'text-base'} />
+              <span className="hidden sm:inline">{t.difficulties[difficulty]}</span>
             </span>
           </div>
           <ul className={compact ? 'space-y-1' : 'space-y-1.5'}>
@@ -1463,20 +1530,23 @@
       );
 
       const difficultySelector = (compact = false) => (
-        <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-2'}`}>
+        <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-1.5'}`}>
           {DIFFICULTIES.map(diff => (
             <button
               key={diff}
+              type="button"
               onClick={() => handleDifficultyChange(diff)}
-              className={`rounded-full font-semibold transition-colors whitespace-nowrap ${
-                compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'
+              title={t.difficulties[diff]}
+              aria-label={t.difficulties[diff]}
+              className={`rounded-lg font-semibold transition-all flex items-center justify-center shrink-0 ${
+                compact ? 'w-7 h-7 text-sm' : 'w-9 h-9 text-base'
               }
                 ${difficulty === diff 
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' 
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400/40 scale-105' 
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                 }`}
             >
-              {t.difficulties[diff]}
+              <DifficultyIcon diff={diff} />
             </button>
           ))}
         </div>
@@ -1575,7 +1645,10 @@
                     <div className={`bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 ${isFullscreen ? 'w-14 h-14' : 'w-24 h-24 mb-6'}`}>
                       <Play size={isFullscreen ? 28 : 48} className="text-indigo-400 ml-1" />
                     </div>
-                    <h2 className={`font-bold mb-2 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>{t.level} {t.difficulties[difficulty]}</h2>
+                    <h2 className={`font-bold mb-2 flex items-center justify-center gap-3 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>
+                      <DifficultyIcon diff={difficulty} className={isFullscreen ? 'text-2xl' : 'text-4xl'} />
+                      <span>{t.level} {t.difficulties[difficulty]}</span>
+                    </h2>
                     {!isFullscreen && (
                       <p className="text-slate-400 max-w-md mx-auto">
                         {t.descriptions[difficulty]}
