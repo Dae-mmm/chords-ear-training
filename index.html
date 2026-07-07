@@ -636,6 +636,16 @@
       'C5': 523.25, 'Db5': 554.37, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25, 'F5': 698.46, 'Gb5': 739.99, 'G5': 783.99, 'Ab5': 830.61, 'A5': 880.00, 'Bb5': 932.33, 'B5': 987.77
     };
 
+    // Armonici approssimati di un pianoforte (serie naturale attenuata)
+    const PIANO_HARMONICS = [
+      { ratio: 1, gain: 1.0 },
+      { ratio: 2, gain: 0.42 },
+      { ratio: 3, gain: 0.18 },
+      { ratio: 4, gain: 0.1 },
+      { ratio: 5, gain: 0.06 },
+      { ratio: 6, gain: 0.03 },
+    ];
+
     // Catalogo degli accordi statici (Principiante e Intermedio sono generativi)
     const CHORD_CATEGORIES = {
       advanced: [
@@ -840,16 +850,44 @@
         if (!audioCtxRef.current) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           const ctx = new AudioContext();
-          
+
+          const masterGain = ctx.createGain();
+          masterGain.gain.value = 0.38;
+
+          const highCut = ctx.createBiquadFilter();
+          highCut.type = 'lowpass';
+          highCut.frequency.value = 5200;
+          highCut.Q.value = 0.4;
+
           const compressor = ctx.createDynamicsCompressor();
-          compressor.threshold.setValueAtTime(-24, ctx.currentTime);
-          compressor.knee.setValueAtTime(30, ctx.currentTime);
-          compressor.ratio.setValueAtTime(12, ctx.currentTime);
-          compressor.attack.setValueAtTime(0.003, ctx.currentTime);
-          compressor.release.setValueAtTime(0.25, ctx.currentTime);
+          compressor.threshold.setValueAtTime(-20, ctx.currentTime);
+          compressor.knee.setValueAtTime(18, ctx.currentTime);
+          compressor.ratio.setValueAtTime(3, ctx.currentTime);
+          compressor.attack.setValueAtTime(0.012, ctx.currentTime);
+          compressor.release.setValueAtTime(0.22, ctx.currentTime);
+
+          const reverbDelay = ctx.createDelay(0.12);
+          reverbDelay.delayTime.value = 0.032;
+          const reverbFeedback = ctx.createGain();
+          reverbFeedback.gain.value = 0.18;
+          const reverbMix = ctx.createGain();
+          reverbMix.gain.value = 0.1;
+
+          const dryMix = ctx.createGain();
+          dryMix.gain.value = 0.9;
+
+          masterGain.connect(dryMix);
+          masterGain.connect(reverbDelay);
+          reverbDelay.connect(reverbFeedback);
+          reverbFeedback.connect(reverbDelay);
+          reverbDelay.connect(reverbMix);
+
+          dryMix.connect(highCut);
+          reverbMix.connect(highCut);
+          highCut.connect(compressor);
           compressor.connect(ctx.destination);
-          
-          ctx.masterCompressor = compressor;
+
+          ctx.masterGain = masterGain;
           audioCtxRef.current = ctx;
         }
         if (audioCtxRef.current.state === 'suspended') {
@@ -860,50 +898,38 @@
       const playTone = (frequency, duration = 2.5, volume = 0.5, startTimeOffset = 0) => {
         if (!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
-        const startTime = ctx.currentTime + startTimeOffset;
-        
-        const masterGain = ctx.createGain();
-        masterGain.connect(ctx.masterCompressor || ctx.destination);
-        
-        const safeVolume = volume * 0.4;
-        
-        masterGain.gain.setValueAtTime(0, startTime);
-        masterGain.gain.linearRampToValueAtTime(safeVolume, startTime + 0.02);
-        masterGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        
+        const t0 = ctx.currentTime + startTimeOffset;
+
+        const noteGain = ctx.createGain();
+        noteGain.connect(ctx.masterGain);
+
+        const peak = volume * 0.5;
+        const body = peak * 0.38;
+        noteGain.gain.setValueAtTime(0.001, t0);
+        noteGain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.001), t0 + 0.006);
+        noteGain.gain.exponentialRampToValueAtTime(Math.max(body, 0.001), t0 + 0.18);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.Q.value = 1;
-        filter.frequency.setValueAtTime(frequency * 3 + 1000, startTime);
-        filter.frequency.exponentialRampToValueAtTime(frequency + 200, startTime + 0.2);
-        filter.connect(masterGain);
-        
-        const osc1 = ctx.createOscillator();
-        osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(frequency, startTime);
-        osc1.connect(filter);
-        osc1.start(startTime);
-        osc1.stop(startTime + duration);
-        
-        const osc2 = ctx.createOscillator();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(frequency * 2, startTime);
-        const gain2 = ctx.createGain();
-        gain2.gain.value = 0.3;
-        osc2.connect(gain2);
-        gain2.connect(filter);
-        osc2.start(startTime);
-        osc2.stop(startTime + duration);
-        
-        const osc3 = ctx.createOscillator();
-        osc3.type = 'sine';
-        osc3.frequency.setValueAtTime(frequency * 3, startTime);
-        const gain3 = ctx.createGain();
-        gain3.gain.value = 0.1;
-        osc3.connect(gain3);
-        gain3.connect(filter);
-        osc3.start(startTime);
-        osc3.stop(startTime + duration);
+        filter.Q.value = 0.6;
+        const brightFreq = Math.min(frequency * 7, 7000);
+        const darkFreq = Math.max(frequency * 1.6, 180);
+        filter.frequency.setValueAtTime(brightFreq, t0);
+        filter.frequency.exponentialRampToValueAtTime(darkFreq, t0 + 0.45);
+        filter.connect(noteGain);
+
+        PIANO_HARMONICS.forEach(({ ratio, gain }) => {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(frequency * ratio, t0);
+          const harmonicGain = ctx.createGain();
+          harmonicGain.gain.value = gain;
+          osc.connect(harmonicGain);
+          harmonicGain.connect(filter);
+          osc.start(t0);
+          osc.stop(t0 + duration + 0.08);
+        });
       };
 
       const playTargetChord = (countListen = true) => {
@@ -912,8 +938,9 @@
         }
         initAudio();
         if (currentChord) {
+          const chordVol = 0.34 / Math.sqrt(currentChord.notes.length);
           currentChord.notes.forEach(noteId => {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4);
+            playTone(FREQUENCIES[noteId], 2.4, chordVol);
           });
         }
       };
@@ -923,9 +950,10 @@
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
+        const userVol = 0.34 / Math.sqrt(Math.max(1, selectedNotes.filter(n => n !== null).length));
         selectedNotes.forEach(noteId => {
           if (noteId) {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4);
+            playTone(FREQUENCIES[noteId], 2.4, userVol);
           }
         });
       };
@@ -935,10 +963,11 @@
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
+        const userVol = 0.34 / Math.sqrt(Math.max(1, selectedNotes.filter(n => n !== null).length));
         let delayIndex = 0;
         selectedNotes.forEach(noteId => {
           if (noteId) {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4, delayIndex * 0.5);
+            playTone(FREQUENCIES[noteId], 2.4, userVol, delayIndex * 0.5);
             delayIndex++;
           }
         });
@@ -1006,8 +1035,9 @@
         setMistakeMade(false);
         
         setTimeout(() => {
+          const chordVol = 0.34 / Math.sqrt(targetChord.notes.length);
           targetChord.notes.forEach(noteId => {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4);
+            playTone(FREQUENCIES[noteId], 2.4, chordVol);
           });
         }, 100);
       };
@@ -1016,7 +1046,7 @@
         if (gameState !== 'playing' || activeBoxIndex === null) return;
         
         initAudio();
-        playTone(FREQUENCIES[noteId], 1.0, 0.6);
+        playTone(FREQUENCIES[noteId], 0.7, 0.38);
         setErrorStatus(false);
         
         setSelectedNotes(prev => {
