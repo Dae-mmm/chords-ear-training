@@ -59,6 +59,11 @@
       background-color: #4f46e5 !important;
       color: #e0e7ff !important;
     }
+
+    .piano-key--black:active {
+      background: #334155 !important;
+      background-color: #334155 !important;
+    }
   </style>
   
   <!-- React & ReactDOM (Caricati via CDN) -->
@@ -148,6 +153,42 @@
         fullscreen: 'Fullscreen',
         exitFullscreen: 'Exit fullscreen',
         rotateDevice: 'Rotate your phone to landscape to continue, or exit fullscreen mode',
+        language: 'Language',
+        starsTitle: 'Star system',
+        starRules: {
+          beginner: [
+            '3 stars: under 2 seconds',
+            '2 stars: up to 5 seconds',
+            '1 star: correct answer (slower)',
+            'Each replay of the target note: −1 star',
+            'Wrong answer: −1 star',
+          ],
+          intermediate: [
+            '3 stars: within 10 seconds',
+            '2 stars: within 20 seconds',
+            '1 star: correct answer (slower)',
+            'Each replay of the target interval: −1 star',
+            'Wrong answer: −1 star',
+          ],
+          advanced: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+          ],
+          pro: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+          ],
+          jazz: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+          ],
+        },
         note: 'Note',
         interval: 'Interval',
         the: 'the',
@@ -202,6 +243,42 @@
         fullscreen: 'Schermo intero',
         exitFullscreen: 'Esci da schermo intero',
         rotateDevice: 'Ruota il telefono in orizzontale per continuare, oppure esci dalla modalità schermo intero',
+        language: 'Lingua',
+        starsTitle: 'Sistema stelle',
+        starRules: {
+          beginner: [
+            '3 stelle: meno di 2 secondi',
+            '2 stelle: fino a 5 secondi',
+            '1 stella: risposta corretta (più lento)',
+            'Ogni riascolto della nota: −1 stella',
+            'Risposta sbagliata: −1 stella',
+          ],
+          intermediate: [
+            '3 stelle: entro 10 secondi',
+            '2 stelle: entro 20 secondi',
+            '1 stella: risposta corretta (più lento)',
+            "Ogni riascolto dell'intervallo: −1 stella",
+            'Risposta sbagliata: −1 stella',
+          ],
+          advanced: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+          ],
+          pro: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+          ],
+          jazz: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+          ],
+        },
         note: 'Nota',
         interval: 'Intervallo',
         the: 'il',
@@ -256,6 +333,42 @@
         fullscreen: 'Plein écran',
         exitFullscreen: 'Quitter le plein écran',
         rotateDevice: 'Tournez votre téléphone en mode paysage pour continuer, ou quittez le plein écran',
+        language: 'Langue',
+        starsTitle: 'Système d\'étoiles',
+        starRules: {
+          beginner: [
+            '3 étoiles : moins de 2 secondes',
+            '2 étoiles : jusqu\'à 5 secondes',
+            '1 étoile : bonne réponse (plus lent)',
+            'Chaque réécoute de la note : −1 étoile',
+            'Mauvaise réponse : −1 étoile',
+          ],
+          intermediate: [
+            '3 étoiles : en 10 secondes',
+            '2 étoiles : en 20 secondes',
+            '1 étoile : bonne réponse (plus lent)',
+            'Chaque réécoute de l\'intervalle : −1 étoile',
+            'Mauvaise réponse : −1 étoile',
+          ],
+          advanced: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+          ],
+          pro: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+          ],
+          jazz: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+          ],
+        },
         note: 'Note',
         interval: 'Intervalle',
         the: 'la',
@@ -310,6 +423,42 @@
         fullscreen: 'Pantalla completa',
         exitFullscreen: 'Salir de pantalla completa',
         rotateDevice: 'Gira el teléfono en horizontal para continuar, o sal de la pantalla completa',
+        language: 'Idioma',
+        starsTitle: 'Sistema de estrellas',
+        starRules: {
+          beginner: [
+            '3 estrellas: menos de 2 segundos',
+            '2 estrellas: hasta 5 segundos',
+            '1 estrella: respuesta correcta (más lento)',
+            'Cada repetición de la nota: −1 estrella',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+          intermediate: [
+            '3 estrellas: en 10 segundos',
+            '2 estrellas: en 20 segundos',
+            '1 estrella: respuesta correcta (más lento)',
+            'Cada repetición del intervalo: −1 estrella',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+          advanced: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+          pro: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+          jazz: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+        },
         note: 'Nota',
         interval: 'Intervalo',
         the: 'la',
@@ -364,6 +513,42 @@
         fullscreen: 'Vollbild',
         exitFullscreen: 'Vollbild beenden',
         rotateDevice: 'Drehe dein Handy ins Querformat, um fortzufahren, oder beende den Vollbildmodus',
+        language: 'Sprache',
+        starsTitle: 'Sternesystem',
+        starRules: {
+          beginner: [
+            '3 Sterne: unter 2 Sekunden',
+            '2 Sterne: bis 5 Sekunden',
+            '1 Stern: richtige Antwort (langsamer)',
+            'Jedes Wiederholen der Note: −1 Stern',
+            'Falsche Antwort: −1 Stern',
+          ],
+          intermediate: [
+            '3 Sterne: innerhalb 10 Sekunden',
+            '2 Sterne: innerhalb 20 Sekunden',
+            '1 Stern: richtige Antwort (langsamer)',
+            'Jedes Wiederholen des Intervalls: −1 Stern',
+            'Falsche Antwort: −1 Stern',
+          ],
+          advanced: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+          ],
+          pro: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+          ],
+          jazz: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+          ],
+        },
         note: 'Note',
         interval: 'Intervall',
         the: 'die',
@@ -1065,20 +1250,38 @@
       );
 
       const langSelector = () => (
-        <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1.5 rounded-xl border border-slate-700 shrink-0">
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          aria-label={t.language}
+          className="bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg px-2 py-1.5 pr-7 appearance-none cursor-pointer hover:bg-slate-700 transition-colors shrink-0"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center' }}
+        >
           {LANGUAGES.map(l => (
-            <button
-              key={l.code}
-              onClick={() => setLang(l.code)}
-              className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors
-                ${lang === l.code
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-                }`}
-            >
-              {l.label}
-            </button>
+            <option key={l.code} value={l.code}>{l.label}</option>
           ))}
+        </select>
+      );
+
+      const starsInfoBox = (compact = false) => (
+        <div className={`bg-slate-800/60 border border-slate-700 rounded-xl text-left w-full ${
+          compact ? 'p-3 max-w-sm' : 'p-4 max-w-md'
+        }`}>
+          <div className="flex items-center gap-2 mb-2">
+            <Star size={compact ? 14 : 18} className="text-amber-400 fill-amber-400 shrink-0" />
+            <h3 className={`font-bold text-slate-200 ${compact ? 'text-xs' : 'text-sm'}`}>{t.starsTitle}</h3>
+            <span className={`text-indigo-400 font-semibold ml-auto ${compact ? 'text-[10px]' : 'text-xs'}`}>
+              {t.difficulties[difficulty]}
+            </span>
+          </div>
+          <ul className={compact ? 'space-y-1' : 'space-y-1.5'}>
+            {(t.starRules[difficulty] || []).map((line, i) => (
+              <li key={i} className={`text-slate-400 flex gap-2 leading-snug ${compact ? 'text-[10px]' : 'text-xs'}`}>
+                <span className="text-amber-400/60 shrink-0">•</span>
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       );
 
@@ -1190,16 +1393,21 @@
               isFullscreen ? 'p-2 overflow-hidden' : isMobile ? 'p-4 overflow-y-auto' : 'p-8'
             }`}>
               {gameState === 'idle' ? (
-                <div className={`text-center flex flex-col items-center justify-center flex-1 ${isFullscreen ? 'py-4' : 'py-10'}`}>
-                  <div className={`bg-indigo-500/20 rounded-full flex items-center justify-center mb-4 ${isFullscreen ? 'w-14 h-14' : 'w-24 h-24 mb-6'}`}>
-                    <Play size={isFullscreen ? 28 : 48} className="text-indigo-400 ml-1" />
+                <div className={`flex flex-col items-center justify-center flex-1 ${isFullscreen ? 'py-4 gap-3' : 'py-6 md:py-10 gap-6'}`}>
+                  <div className="text-center">
+                    <div className={`bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 ${isFullscreen ? 'w-14 h-14' : 'w-24 h-24 mb-6'}`}>
+                      <Play size={isFullscreen ? 28 : 48} className="text-indigo-400 ml-1" />
+                    </div>
+                    <h2 className={`font-bold mb-2 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>{t.level} {t.difficulties[difficulty]}</h2>
+                    {!isFullscreen && (
+                      <p className="text-slate-400 max-w-md mx-auto">
+                        {t.descriptions[difficulty]}
+                      </p>
+                    )}
                   </div>
-                  <h2 className={`font-bold mb-2 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>{t.level} {t.difficulties[difficulty]}</h2>
-                  {!isFullscreen && (
-                    <p className="text-slate-400 max-w-md mx-auto mb-8">
-                      {t.descriptions[difficulty]}
-                    </p>
-                  )}
+
+                  {starsInfoBox(isFullscreen)}
+
                   <button 
                     onClick={startGame}
                     className={`bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2 ${
