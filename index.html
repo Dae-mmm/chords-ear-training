@@ -69,7 +69,7 @@
     @font-face {
       font-family: 'Bravura Text';
       font-style: normal;
-      font-display: swap;
+      font-display: block;
       font-weight: 400;
       src: url('fonts/BravuraText.woff2') format('woff2'),
            url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/BravuraText.woff2') format('woff2'),
@@ -80,10 +80,14 @@
       font-family: 'Bravura Text', serif;
       font-weight: 400;
       font-style: normal;
-      font-feature-settings: normal;
       line-height: 1;
       -webkit-font-smoothing: antialiased;
       font-synthesis: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      max-height: 1.15em;
+      overflow: hidden;
     }
   </style>
   
@@ -853,50 +857,60 @@
 
     const getChordKey = (chord) => `${chord.root}-${chord.type || chord.symbol}-${chord.notes.join(',')}`;
 
-    // Glifi SMuFL (Bravura Text) — un simbolo per livello, sempre più "da spartito"
+    // Glifi SMuFL semplici — niente simboli "larghi" da spartito (beam, legato intero, ecc.)
     const SMUFL = {
-      note8thUp: '\uE1D7',           // croma
-      note8thBeamed2: '\uE1E0',      // due crome legate
-      note8thBeamed3: '\uE1E1',      // tre crome legate
-      restQuarter: '\uE4E5',         // pausa di semiminima
-      restHalf: '\uE4E4',            // pausa di minima
-      tie: '\uE22C',                 // legato
-      segno: '\uE047',               // segno (𝄋)
+      note8thUp: '\uE1D7',
+      noteheadBlack: '\uE0A4',
+      restQuarter: '\uE4E5',
+      rest8th: '\uE4E6',
+      fermataAbove: '\uE4C0',
+      segno: '\uE047',
     };
 
-    const DIFFICULTY_GLYPHS = {
-      beginner: SMUFL.note8thUp,
-      intermediate: SMUFL.note8thBeamed2,
-      intermediate_plus: SMUFL.restQuarter,
-      advanced: SMUFL.note8thBeamed3,
-      advanced_plus: SMUFL.restHalf,
-      pro: SMUFL.tie,
-      jazz: SMUFL.segno,
-    };
+    const MusicGlyph = ({ children, className = '', style }) => (
+      <span className={`music-icon ${className}`} style={style} aria-hidden>{children}</span>
+    );
 
-    const DIFFICULTY_GLYPH_SCALE = {
-      beginner: 'text-[1em]',
-      intermediate: 'text-[1.08em]',
-      intermediate_plus: 'text-[1em]',
-      advanced: 'text-[1.05em]',
-      advanced_plus: 'text-[0.95em]',
-      pro: 'text-[0.92em]',
-      jazz: 'text-[0.9em]',
-    };
+    const RepeatNotes = ({ count, className = '', size = '0.88em', overlap = '-0.2em' }) => (
+      <MusicGlyph className={className} style={{ fontSize: size }}>
+        {Array.from({ length: count }, (_, i) => (
+          <span key={i} style={{ marginLeft: i > 0 ? overlap : 0 }}>{SMUFL.note8thUp}</span>
+        ))}
+      </MusicGlyph>
+    );
 
-    const MusicGlyph = ({ children, className = '' }) => (
-      <span className={`music-icon ${className}`} aria-hidden>{children}</span>
+    const LegatoIcon = ({ className = '' }) => (
+      <span className={`inline-flex flex-col items-center justify-end leading-none overflow-hidden max-h-[1.15em] ${className}`} aria-hidden>
+        <span
+          className="block border-t-[2px] border-current rounded-t-full"
+          style={{ width: '1em', height: '0.36em', marginBottom: '-0.06em' }}
+        />
+        <MusicGlyph style={{ fontSize: '0.5em' }}>
+          <span style={{ marginRight: '-0.12em' }}>{SMUFL.noteheadBlack}</span>
+          <span>{SMUFL.noteheadBlack}</span>
+        </MusicGlyph>
+      </span>
     );
 
     const DifficultyIcon = ({ diff, className = '' }) => {
-      const glyph = DIFFICULTY_GLYPHS[diff];
-      if (!glyph) return null;
-
-      return (
-        <MusicGlyph className={`inline-flex items-center justify-center leading-none select-none ${DIFFICULTY_GLYPH_SCALE[diff] || ''} ${className}`}>
-          {glyph}
-        </MusicGlyph>
-      );
+      switch (diff) {
+        case 'beginner':
+          return <MusicGlyph className={className}>{SMUFL.note8thUp}</MusicGlyph>;
+        case 'intermediate':
+          return <RepeatNotes count={2} className={className} size="0.82em" overlap="-0.22em" />;
+        case 'intermediate_plus':
+          return <MusicGlyph className={className}>{SMUFL.restQuarter}</MusicGlyph>;
+        case 'advanced':
+          return <RepeatNotes count={3} className={className} size="0.68em" overlap="-0.16em" />;
+        case 'advanced_plus':
+          return <MusicGlyph className={className}>{SMUFL.rest8th}</MusicGlyph>;
+        case 'pro':
+          return <LegatoIcon className={className} />;
+        case 'jazz':
+          return <MusicGlyph className={`${className} text-[0.92em]`}>{SMUFL.segno}</MusicGlyph>;
+        default:
+          return null;
+      }
     };
 
     function App() {
