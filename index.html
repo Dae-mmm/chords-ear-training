@@ -853,89 +853,50 @@
 
     const getChordKey = (chord) => `${chord.root}-${chord.type || chord.symbol}-${chord.notes.join(',')}`;
 
-    // Glifi SMuFL (Bravura Text) — notazione musicale vera, non emoji Unicode
+    // Glifi SMuFL (Bravura Text) — un simbolo per livello, sempre più "da spartito"
     const SMUFL = {
-      note8thUp: '\uE1D7',
-      noteQuarterUp: '\uE1D5',
-      noteheadBlack: '\uE0A4',
-      chordSymbolsDiminished: '\uE870',
-      chordSymbolsMajorSeventh: '\uE87A',
-      accidentalSharp: '\uE262',
-      figuredBass1: '\uE881',
-      figuredBass7: '\uE887',
+      note8thUp: '\uE1D7',           // croma
+      note8thBeamed2: '\uE1E0',      // due crome legate
+      note8thBeamed3: '\uE1E1',      // tre crome legate
+      restQuarter: '\uE4E5',         // pausa di semiminima
+      restHalf: '\uE4E4',            // pausa di minima
+      tie: '\uE22C',                 // legato
+      segno: '\uE047',               // segno (𝄋)
+    };
+
+    const DIFFICULTY_GLYPHS = {
+      beginner: SMUFL.note8thUp,
+      intermediate: SMUFL.note8thBeamed2,
+      intermediate_plus: SMUFL.restQuarter,
+      advanced: SMUFL.note8thBeamed3,
+      advanced_plus: SMUFL.restHalf,
+      pro: SMUFL.tie,
+      jazz: SMUFL.segno,
+    };
+
+    const DIFFICULTY_GLYPH_SCALE = {
+      beginner: 'text-[1em]',
+      intermediate: 'text-[1.08em]',
+      intermediate_plus: 'text-[1em]',
+      advanced: 'text-[1.05em]',
+      advanced_plus: 'text-[0.95em]',
+      pro: 'text-[0.92em]',
+      jazz: 'text-[0.9em]',
     };
 
     const MusicGlyph = ({ children, className = '' }) => (
       <span className={`music-icon ${className}`} aria-hidden>{children}</span>
     );
 
-    const StackedNoteheads = ({ count, className = '' }) => (
-      <MusicGlyph className={`inline-flex flex-col items-center leading-[0.36] ${className}`}>
-        {Array.from({ length: count }, (_, i) => (
-          <span key={i} className={i > 0 ? '-mt-[0.34em]' : ''}>{SMUFL.noteheadBlack}</span>
-        ))}
-      </MusicGlyph>
-    );
-
-    const ArpeggioNotes = ({ count, className = '' }) => (
-      <MusicGlyph className={`inline-flex items-end justify-center ${className}`}>
-        {Array.from({ length: count }, (_, i) => (
-          <span
-            key={i}
-            className={`leading-none ${i > 0 ? '-ml-[0.14em]' : ''}`}
-            style={{ transform: `translateY(-${i * 14}%)` }}
-          >
-            {SMUFL.noteQuarterUp}
-          </span>
-        ))}
-      </MusicGlyph>
-    );
-
-    // Simboli musicali progressivi: dal più intuitivo al più "da spartito avanzato"
     const DifficultyIcon = ({ diff, className = '' }) => {
-      const base = `inline-flex items-center justify-center leading-none select-none ${className}`;
+      const glyph = DIFFICULTY_GLYPHS[diff];
+      if (!glyph) return null;
 
-      switch (diff) {
-        case 'beginner':
-          return (
-            <MusicGlyph className={base}>
-              {SMUFL.note8thUp}
-            </MusicGlyph>
-          );
-
-        case 'intermediate':
-          return <ArpeggioNotes count={2} className={base} />;
-
-        case 'intermediate_plus':
-          return <StackedNoteheads count={2} className={`${base} text-[0.88em]`} />;
-
-        case 'advanced':
-          return <ArpeggioNotes count={3} className={`${base} text-[0.82em]`} />;
-
-        case 'advanced_plus':
-          return <StackedNoteheads count={3} className={`${base} text-[0.78em]`} />;
-
-        case 'pro':
-          return (
-            <MusicGlyph className={`${base} items-baseline`}>
-              <span>{SMUFL.chordSymbolsDiminished}</span>
-              <span className="text-[0.55em] align-super leading-none">{SMUFL.figuredBass7}</span>
-            </MusicGlyph>
-          );
-
-        case 'jazz':
-          return (
-            <MusicGlyph className={`${base} items-baseline tracking-tighter text-[0.82em]`}>
-              <span>{SMUFL.chordSymbolsMajorSeventh}</span>
-              <span className="text-[0.5em] align-super leading-none ml-px">
-                {SMUFL.accidentalSharp}{SMUFL.figuredBass1}{SMUFL.figuredBass1}
-              </span>
-            </MusicGlyph>
-          );
-
-        default:
-          return null;
-      }
+      return (
+        <MusicGlyph className={`inline-flex items-center justify-center leading-none select-none ${DIFFICULTY_GLYPH_SCALE[diff] || ''} ${className}`}>
+          {glyph}
+        </MusicGlyph>
+      );
     };
 
     function App() {
@@ -1579,7 +1540,7 @@
               title={t.difficulties[diff]}
               aria-label={t.difficulties[diff]}
               className={`rounded-lg font-semibold transition-all flex items-center justify-center shrink-0 ${
-                compact ? 'w-7 h-7 text-sm' : 'w-9 h-9 text-base'
+                compact ? 'min-w-7 h-7 px-1 text-sm' : 'min-w-9 h-9 px-1.5 text-base'
               }
                 ${difficulty === diff 
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400/40 scale-105' 
