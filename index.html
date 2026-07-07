@@ -164,8 +164,8 @@
             'Wrong answer: −1 star',
           ],
           intermediate: [
-            '3 stars: within 10 seconds',
-            '2 stars: within 20 seconds',
+            '3 stars: within 5 seconds',
+            '2 stars: within 10 seconds',
             '1 star: correct answer (slower)',
             'Each replay of the target interval: −1 star',
             'Wrong answer: −1 star',
@@ -254,8 +254,8 @@
             'Risposta sbagliata: −1 stella',
           ],
           intermediate: [
-            '3 stelle: entro 10 secondi',
-            '2 stelle: entro 20 secondi',
+            '3 stelle: entro 5 secondi',
+            '2 stelle: entro 10 secondi',
             '1 stella: risposta corretta (più lento)',
             "Ogni riascolto dell'intervallo: −1 stella",
             'Risposta sbagliata: −1 stella',
@@ -344,8 +344,8 @@
             'Mauvaise réponse : −1 étoile',
           ],
           intermediate: [
-            '3 étoiles : en 10 secondes',
-            '2 étoiles : en 20 secondes',
+            '3 étoiles : en 5 secondes',
+            '2 étoiles : en 10 secondes',
             '1 étoile : bonne réponse (plus lent)',
             'Chaque réécoute de l\'intervalle : −1 étoile',
             'Mauvaise réponse : −1 étoile',
@@ -434,8 +434,8 @@
             'Respuesta incorrecta: −1 estrella',
           ],
           intermediate: [
-            '3 estrellas: en 10 segundos',
-            '2 estrellas: en 20 segundos',
+            '3 estrellas: en 5 segundos',
+            '2 estrellas: en 10 segundos',
             '1 estrella: respuesta correcta (más lento)',
             'Cada repetición del intervalo: −1 estrella',
             'Respuesta incorrecta: −1 estrella',
@@ -524,8 +524,8 @@
             'Falsche Antwort: −1 Stern',
           ],
           intermediate: [
-            '3 Sterne: innerhalb 10 Sekunden',
-            '2 Sterne: innerhalb 20 Sekunden',
+            '3 Sterne: innerhalb 5 Sekunden',
+            '2 Sterne: innerhalb 10 Sekunden',
             '1 Stern: richtige Antwort (langsamer)',
             'Jedes Wiederholen des Intervalls: −1 Stern',
             'Falsche Antwort: −1 Stern',
@@ -1111,8 +1111,8 @@
         if (difficulty === 'intermediate') {
           const elapsed = elapsedSeconds ?? getElapsedSeconds();
           let baseStars = 1;
-          if (elapsed <= 10) baseStars = 3;
-          else if (elapsed <= 20) baseStars = 2;
+          if (elapsed <= 5) baseStars = 3;
+          else if (elapsed <= 10) baseStars = 2;
           return Math.max(0, baseStars - targetListenCount - errorCount);
         }
 
