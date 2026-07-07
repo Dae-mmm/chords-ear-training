@@ -846,13 +846,67 @@
       const { count, plus } = DIFFICULTY_STARS[diff] || { count: 1, plus: false };
       const starClass = selected ? 'text-white fill-white' : 'text-amber-400 fill-amber-400';
       const plusClass = selected ? 'text-white' : 'text-amber-400';
+      const gap = Math.max(1, Math.round(size * 0.06));
+
+      const renderStar = (key) => (
+        <Star key={key} size={size} className={`shrink-0 ${starClass}`} />
+      );
+
+      const renderLayout = () => {
+        if (count === 1) return renderStar(0);
+
+        if (count === 2) {
+          return (
+            <span className="inline-flex items-center" style={{ gap }}>
+              {renderStar(0)}
+              {renderStar(1)}
+            </span>
+          );
+        }
+
+        if (count === 3) {
+          return (
+            <span className="inline-grid grid-cols-2 justify-items-center" style={{ gap }}>
+              <span className="col-span-2 flex justify-center">{renderStar(0)}</span>
+              {renderStar(1)}
+              {renderStar(2)}
+            </span>
+          );
+        }
+
+        if (count === 4) {
+          return (
+            <span className="inline-grid grid-cols-2" style={{ gap }}>
+              {renderStar(0)}
+              {renderStar(1)}
+              {renderStar(2)}
+              {renderStar(3)}
+            </span>
+          );
+        }
+
+        return (
+          <span
+            className="inline-grid grid-cols-3 justify-items-center items-center"
+            style={{ gap, width: size * 2.6, height: size * 2.6 }}
+          >
+            {renderStar(0)}
+            <span />
+            {renderStar(1)}
+            <span />
+            {renderStar(2)}
+            <span />
+            {renderStar(3)}
+            <span />
+            {renderStar(4)}
+          </span>
+        );
+      };
 
       return (
-        <span className={`inline-flex items-center gap-px leading-none ${className}`} aria-hidden>
-          {Array.from({ length: count }, (_, i) => (
-            <Star key={i} size={size} className={starClass} />
-          ))}
-          {plus && <span className={`text-[0.7em] font-bold leading-none ml-px ${plusClass}`}>+</span>}
+        <span className={`inline-flex items-center leading-none ${className}`} style={{ gap: plus ? 2 : 0 }} aria-hidden>
+          {renderLayout()}
+          {plus && <span className={`text-[0.7em] font-bold leading-none ${plusClass}`}>+</span>}
         </span>
       );
     };
@@ -1498,7 +1552,7 @@
               title={t.difficulties[diff]}
               aria-label={t.difficulties[diff]}
               className={`rounded-lg font-semibold transition-all flex items-center justify-center shrink-0 ${
-                compact ? 'h-7 px-1.5' : 'h-9 px-2'
+                compact ? 'h-8 px-1.5' : 'h-10 px-2'
               }
                 ${difficulty === diff 
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400/40 scale-105' 
