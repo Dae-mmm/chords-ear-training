@@ -90,7 +90,14 @@
       { code: 'de', label: 'DE' }
     ];
     const DEFAULT_LANG = 'en';
-    const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'pro', 'jazz'];
+    const DIFFICULTIES = ['beginner', 'intermediate', 'intermediate_plus', 'advanced', 'advanced_plus', 'pro', 'jazz'];
+
+    const isIntervalLevel = (d) => d === 'intermediate' || d === 'intermediate_plus';
+    const isIntervalArpeggio = (d) => d === 'intermediate';
+    const isChordDictionaryLevel = (d) => d === 'advanced' || d === 'advanced_plus' || d === 'pro' || d === 'jazz';
+    const isChordArpeggio = (d) => d === 'advanced';
+    const getChordCategoryKey = (d) => (d === 'advanced_plus' ? 'advanced' : d);
+    const usesTargetListenPenalty = (d) => d === 'beginner' || isIntervalLevel(d);
 
     const NOTE_NAMES = {
       en: { C: 'C', Db: 'C#', D: 'D', Eb: 'Eb', E: 'E', F: 'F', Gb: 'F#', G: 'G', Ab: 'Ab', A: 'A', Bb: 'Bb', B: 'B' },
@@ -169,12 +176,29 @@
             '1 star: correct answer (slower)',
             'Each replay of the target interval: −1 star',
             'Wrong answer: −1 star',
+            'Interval played as arpeggio',
+          ],
+          intermediate_plus: [
+            '3 stars: within 5 seconds',
+            '2 stars: within 10 seconds',
+            '1 star: correct answer (slower)',
+            'Each replay of the target interval: −1 star',
+            'Wrong answer: −1 star',
+            'Interval played together (harmonic)',
           ],
           advanced: [
             '3 stars: no replays of your answer',
             '2 stars: 1–2 replays',
             '1 star: 3 or more replays',
             'Wrong answer: −1 star',
+            'Chord played as arpeggio',
+          ],
+          advanced_plus: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+            'Chord played together (harmonic)',
           ],
           pro: [
             '3 stars: no replays of your answer',
@@ -196,14 +220,18 @@
         difficulties: {
           beginner: 'Beginner',
           intermediate: 'Intermediate',
+          intermediate_plus: 'Intermediate+',
           advanced: 'Advanced',
+          advanced_plus: 'Advanced+',
           pro: 'Pro',
           jazz: 'Jazz'
         },
         descriptions: {
           beginner: 'Train your relative and absolute ear by guessing a randomly generated single note.',
-          intermediate: 'Recognize the distance (interval) between two notes. The starting note is given to you!',
-          advanced: 'Major and minor chords (3 notes). The foundations of harmony.',
+          intermediate: 'Recognize the interval between two notes (arpeggio). The starting note is given to you!',
+          intermediate_plus: 'Recognize the interval between two notes played together. The starting note is given to you!',
+          advanced: 'Major and minor chords (3 notes), played as arpeggio. The foundations of harmony.',
+          advanced_plus: 'Major and minor chords (3 notes), played together. The foundations of harmony.',
           pro: 'Suspended (sus), diminished and augmented chords (3 notes). Tension and resolution.',
           jazz: 'Complex chords (sevenths, ninths, altered, etc.). For real musicians.'
         }
@@ -259,12 +287,29 @@
             '1 stella: risposta corretta (più lento)',
             "Ogni riascolto dell'intervallo: −1 stella",
             'Risposta sbagliata: −1 stella',
+            'Intervallo in arpeggio',
+          ],
+          intermediate_plus: [
+            '3 stelle: entro 5 secondi',
+            '2 stelle: entro 10 secondi',
+            '1 stella: risposta corretta (più lento)',
+            "Ogni riascolto dell'intervallo: −1 stella",
+            'Risposta sbagliata: −1 stella',
+            'Intervallo suonato insieme (armonico)',
           ],
           advanced: [
             '3 stelle: nessun riascolto della tua risposta',
             '2 stelle: 1–2 riascolti',
             '1 stella: 3 o più riascolti',
             'Risposta sbagliata: −1 stella',
+            'Accordo in arpeggio',
+          ],
+          advanced_plus: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+            'Accordo suonato insieme (armonico)',
           ],
           pro: [
             '3 stelle: nessun riascolto della tua risposta',
@@ -286,14 +331,18 @@
         difficulties: {
           beginner: 'Principiante',
           intermediate: 'Intermedio',
+          intermediate_plus: 'Intermedio+',
           advanced: 'Avanzato',
+          advanced_plus: 'Avanzato+',
           pro: 'Pro',
           jazz: 'Jazz'
         },
         descriptions: {
           beginner: "Allena l'orecchio relativo e assoluto indovinando una singola nota generata casualmente.",
-          intermediate: 'Riconosci la distanza (intervallo) tra due note. Il sistema ti regala la nota di partenza!',
-          advanced: "Accordi maggiori e minori (3 note). Le fondamenta dell'armonia.",
+          intermediate: "Riconosci l'intervallo tra due note (arpeggio). Il sistema ti regala la nota di partenza!",
+          intermediate_plus: "Riconosci l'intervallo tra due note suonate insieme. Il sistema ti regala la nota di partenza!",
+          advanced: "Accordi maggiori e minori (3 note), in arpeggio. Le fondamenta dell'armonia.",
+          advanced_plus: "Accordi maggiori e minori (3 note), suonati insieme. Le fondamenta dell'armonia.",
           pro: 'Accordi sospesi (sus), diminuiti e aumentati (3 note). Tensione e risoluzione.',
           jazz: 'Accordi complessi (settime, none, alterati, ecc). Per veri musicisti.'
         }
@@ -349,12 +398,29 @@
             '1 étoile : bonne réponse (plus lent)',
             'Chaque réécoute de l\'intervalle : −1 étoile',
             'Mauvaise réponse : −1 étoile',
+            'Intervalle en arpège',
+          ],
+          intermediate_plus: [
+            '3 étoiles : en 5 secondes',
+            '2 étoiles : en 10 secondes',
+            '1 étoile : bonne réponse (plus lent)',
+            'Chaque réécoute de l\'intervalle : −1 étoile',
+            'Mauvaise réponse : −1 étoile',
+            'Intervalle joué ensemble (harmonique)',
           ],
           advanced: [
             '3 étoiles : aucune réécoute de votre réponse',
             '2 étoiles : 1–2 réécoutes',
             '1 étoile : 3 réécoutes ou plus',
             'Mauvaise réponse : −1 étoile',
+            'Accord en arpège',
+          ],
+          advanced_plus: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+            'Accord joué ensemble (harmonique)',
           ],
           pro: [
             '3 étoiles : aucune réécoute de votre réponse',
@@ -376,14 +442,18 @@
         difficulties: {
           beginner: 'Débutant',
           intermediate: 'Intermédiaire',
+          intermediate_plus: 'Intermédiaire+',
           advanced: 'Avancé',
+          advanced_plus: 'Avancé+',
           pro: 'Pro',
           jazz: 'Jazz'
         },
         descriptions: {
           beginner: 'Entraînez votre oreille relative et absolue en devinant une note générée aléatoirement.',
-          intermediate: 'Reconnaissez la distance (intervalle) entre deux notes. La note de départ vous est offerte !',
-          advanced: 'Accords majeurs et mineurs (3 notes). Les fondements de l\'harmonie.',
+          intermediate: 'Reconnaissez l\'intervalle entre deux notes (arpège). La note de départ vous est offerte !',
+          intermediate_plus: 'Reconnaissez l\'intervalle entre deux notes jouées ensemble. La note de départ vous est offerte !',
+          advanced: 'Accords majeurs et mineurs (3 notes), en arpège. Les fondements de l\'harmonie.',
+          advanced_plus: 'Accords majeurs et mineurs (3 notes), joués ensemble. Les fondements de l\'harmonie.',
           pro: 'Accords suspendus (sus), diminués et augmentés (3 notes). Tension et résolution.',
           jazz: 'Accords complexes (septièmes, neuvièmes, altérés, etc.). Pour les vrais musiciens.'
         }
@@ -439,12 +509,29 @@
             '1 estrella: respuesta correcta (más lento)',
             'Cada repetición del intervalo: −1 estrella',
             'Respuesta incorrecta: −1 estrella',
+            'Intervalo en arpegio',
+          ],
+          intermediate_plus: [
+            '3 estrellas: en 5 segundos',
+            '2 estrellas: en 10 segundos',
+            '1 estrella: respuesta correcta (más lento)',
+            'Cada repetición del intervalo: −1 estrella',
+            'Respuesta incorrecta: −1 estrella',
+            'Intervalo tocado junto (armónico)',
           ],
           advanced: [
             '3 estrellas: sin repetir tu respuesta',
             '2 estrellas: 1–2 repeticiones',
             '1 estrella: 3 o más repeticiones',
             'Respuesta incorrecta: −1 estrella',
+            'Acorde en arpegio',
+          ],
+          advanced_plus: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+            'Acorde tocado junto (armónico)',
           ],
           pro: [
             '3 estrellas: sin repetir tu respuesta',
@@ -466,14 +553,18 @@
         difficulties: {
           beginner: 'Principiante',
           intermediate: 'Intermedio',
+          intermediate_plus: 'Intermedio+',
           advanced: 'Avanzado',
+          advanced_plus: 'Avanzado+',
           pro: 'Pro',
           jazz: 'Jazz'
         },
         descriptions: {
           beginner: 'Entrena tu oído relativo y absoluto adivinando una nota generada al azar.',
-          intermediate: 'Reconoce la distancia (intervalo) entre dos notas. ¡La nota inicial te la regalamos!',
-          advanced: 'Acordes mayores y menores (3 notas). Los fundamentos de la armonía.',
+          intermediate: 'Reconoce el intervalo entre dos notas (arpegio). ¡La nota inicial te la regalamos!',
+          intermediate_plus: 'Reconoce el intervalo entre dos notas tocadas juntas. ¡La nota inicial te la regalamos!',
+          advanced: 'Acordes mayores y menores (3 notas), en arpegio. Los fundamentos de la armonía.',
+          advanced_plus: 'Acordes mayores y menores (3 notas), tocados juntos. Los fundamentos de la armonía.',
           pro: 'Acordes suspendidos (sus), disminuidos y aumentados (3 notas). Tensión y resolución.',
           jazz: 'Acordes complejos (séptimas, novenas, alterados, etc.). Para músicos de verdad.'
         }
@@ -529,12 +620,29 @@
             '1 Stern: richtige Antwort (langsamer)',
             'Jedes Wiederholen des Intervalls: −1 Stern',
             'Falsche Antwort: −1 Stern',
+            'Intervall als Arpeggio',
+          ],
+          intermediate_plus: [
+            '3 Sterne: innerhalb 5 Sekunden',
+            '2 Sterne: innerhalb 10 Sekunden',
+            '1 Stern: richtige Antwort (langsamer)',
+            'Jedes Wiederholen des Intervalls: −1 Stern',
+            'Falsche Antwort: −1 Stern',
+            'Intervall zusammen gespielt (harmonisch)',
           ],
           advanced: [
             '3 Sterne: keine Wiederholung deiner Antwort',
             '2 Sterne: 1–2 Wiederholungen',
             '1 Stern: 3 oder mehr Wiederholungen',
             'Falsche Antwort: −1 Stern',
+            'Akkord als Arpeggio',
+          ],
+          advanced_plus: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+            'Akkord zusammen gespielt (harmonisch)',
           ],
           pro: [
             '3 Sterne: keine Wiederholung deiner Antwort',
@@ -556,14 +664,18 @@
         difficulties: {
           beginner: 'Anfänger',
           intermediate: 'Mittel',
+          intermediate_plus: 'Mittel+',
           advanced: 'Fortgeschritten',
+          advanced_plus: 'Fortgeschritten+',
           pro: 'Pro',
           jazz: 'Jazz'
         },
         descriptions: {
           beginner: 'Trainiere dein relatives und absolutes Gehör, indem du eine zufällig generierte Note errätst.',
-          intermediate: 'Erkenne die Distanz (Intervall) zwischen zwei Noten. Die Startnote bekommst du geschenkt!',
-          advanced: 'Dur- und Moll-Akkorde (3 Töne). Die Grundlagen der Harmonie.',
+          intermediate: 'Erkenne das Intervall zwischen zwei Noten (Arpeggio). Die Startnote bekommst du geschenkt!',
+          intermediate_plus: 'Erkenne das Intervall zwischen zwei zusammen gespielten Noten. Die Startnote bekommst du geschenkt!',
+          advanced: 'Dur- und Moll-Akkorde (3 Töne), als Arpeggio. Die Grundlagen der Harmonie.',
+          advanced_plus: 'Dur- und Moll-Akkorde (3 Töne), zusammen gespielt. Die Grundlagen der Harmonie.',
           pro: 'Sus-, verminderte und übermäßige Akkorde (3 Töne). Spannung und Auflösung.',
           jazz: 'Komplexe Akkorde (Septimen, Nonen, alteriert, etc.). Für echte Musiker.'
         }
@@ -830,7 +942,9 @@
       const [stats, setStats] = useState({
         beginner: { current: 0, best: 0 },
         intermediate: { current: 0, best: 0 },
+        intermediate_plus: { current: 0, best: 0 },
         advanced: { current: 0, best: 0 },
+        advanced_plus: { current: 0, best: 0 },
         pro: { current: 0, best: 0 },
         jazz: { current: 0, best: 0 }
       });
@@ -960,7 +1074,7 @@
 
       const playTargetNotes = (notes) => {
         const chordVol = 0.34 / Math.sqrt(notes.length);
-        if (difficulty === 'intermediate') {
+        if (isIntervalArpeggio(difficulty) || isChordArpeggio(difficulty)) {
           notes.forEach((noteId, i) => {
             playTone(FREQUENCIES[noteId], 2.4, chordVol, i * 0.55);
           });
@@ -972,7 +1086,7 @@
       };
 
       const playTargetChord = (countListen = true) => {
-        if (countListen && gameState === 'playing' && (difficulty === 'beginner' || difficulty === 'intermediate')) {
+        if (countListen && gameState === 'playing' && usesTargetListenPenalty(difficulty)) {
           setTargetListenCount(prev => prev + 1);
         }
         initAudio();
@@ -982,7 +1096,7 @@
       };
 
       const playUserChord = () => {
-        if (gameState === 'playing' && difficulty !== 'beginner' && difficulty !== 'intermediate') {
+        if (gameState === 'playing' && !usesTargetListenPenalty(difficulty)) {
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
@@ -995,7 +1109,7 @@
       };
 
       const playUserArpeggio = () => {
-        if (gameState === 'playing' && difficulty !== 'beginner' && difficulty !== 'intermediate') {
+        if (gameState === 'playing' && !usesTargetListenPenalty(difficulty)) {
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
@@ -1029,7 +1143,7 @@
           targetChord = { name: `${t.note} ${randomKey.label}`, notes: [randomKey.id] };
           initialSelectedNotes = [null];
           
-        } else if (difficulty === 'intermediate') {
+        } else if (isIntervalLevel(difficulty)) {
           // Genera un intervallo (1-12 semitoni)
           const baseIndex = Math.floor(Math.random() * (pianoKeys.length - 12));
           const intervalDistance = Math.floor(Math.random() * 12) + 1;
@@ -1047,7 +1161,7 @@
           
         } else {
           // Selezione da dizionario (Avanzato, Pro, Jazz)
-          const chordsList = CHORD_CATEGORIES[difficulty];
+          const chordsList = CHORD_CATEGORIES[getChordCategoryKey(difficulty)];
           let selectedChord;
           do {
             selectedChord = chordsList[Math.floor(Math.random() * chordsList.length)];
@@ -1092,7 +1206,7 @@
       const selectBox = (index) => {
         if (gameState === 'playing') {
           // Blocca la selezione del primo box se siamo in modalità Intermedio (è regalato)
-          if (difficulty === 'intermediate' && index === 0) return;
+                if (isIntervalLevel(difficulty) && index === 0) return;
           setActiveBoxIndex(index);
         }
       };
@@ -1108,7 +1222,7 @@
           return Math.max(0, baseStars - targetListenCount - errorCount);
         }
 
-        if (difficulty === 'intermediate') {
+        if (isIntervalLevel(difficulty)) {
           const elapsed = elapsedSeconds ?? getElapsedSeconds();
           let baseStars = 1;
           if (elapsed <= 5) baseStars = 3;
@@ -1502,7 +1616,7 @@
                       <Volume2 size={isFullscreen ? 16 : 24} className="text-indigo-400 group-hover:scale-110 transition-transform shrink-0" />
                       <div className="text-left">
                         <div className="leading-tight">
-                          {difficulty === 'beginner' ? t.theNote : difficulty === 'intermediate' ? t.theInterval : t.theChord}
+                          {difficulty === 'beginner' ? t.theNote : isIntervalLevel(difficulty) ? t.theInterval : t.theChord}
                         </div>
                         {!isFullscreen && <div className="text-sm text-slate-400 font-normal">{t.guess}</div>}
                       </div>
@@ -1511,14 +1625,14 @@
                     <div className={`flex items-center ${isFullscreen ? 'gap-2 flex-1 justify-center min-w-0' : 'flex-col md:items-end w-full md:w-auto gap-4'}`}>
                       {!isFullscreen && (
                         <p className="text-sm text-slate-400 mb-2 font-medium">
-                          {difficulty === 'beginner' ? t.findNote : difficulty === 'intermediate' ? t.completeInterval : t.composeChord}
+                          {difficulty === 'beginner' ? t.findNote : isIntervalLevel(difficulty) ? t.completeInterval : t.composeChord}
                         </p>
                       )}
                       <div className={`flex flex-wrap justify-center ${isFullscreen ? 'gap-1' : 'gap-2 sm:gap-3'}`}>
                         {selectedNotes.map((noteId, i) => {
                           const keyInfo = pianoKeys.find(k => k.id === noteId);
                           const isActive = activeBoxIndex === i && gameState === 'playing';
-                          const isLocked = difficulty === 'intermediate' && i === 0;
+                          const isLocked = isIntervalLevel(difficulty) && i === 0;
                           
                           return (
                             <div 
@@ -1559,7 +1673,7 @@
                             title={t.playTogether}
                           >
                             <Music size={16} className={selectedNotes.some(n => n !== null) ? 'text-amber-400' : ''} />
-                            {difficulty === 'beginner' ? t.replay : difficulty === 'intermediate' ? t.harmonic : t.chord}
+                            {difficulty === 'beginner' ? t.replay : isIntervalLevel(difficulty) ? t.harmonic : t.chord}
                           </button>
                           {difficulty !== 'beginner' && (
                             <button 
@@ -1573,7 +1687,7 @@
                               title={t.playOneByOne}
                             >
                               <Play size={16} className={selectedNotes.some(n => n !== null) ? 'text-emerald-400' : ''} />
-                              {difficulty === 'intermediate' ? t.melodic : t.arpeggio}
+                              {isIntervalLevel(difficulty) ? t.melodic : t.arpeggio}
                             </button>
                           )}
                         </div>
