@@ -8,7 +8,6 @@
   
   <!-- Tailwind CSS (Caricato via CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preload" href="fonts/BravuraText.woff2" as="font" type="font/woff2" crossorigin>
   <style>
     html.fullscreen-active, html.fullscreen-active body {
       overflow: hidden;
@@ -64,30 +63,6 @@
     .piano-key--black:active {
       background: #334155 !important;
       background-color: #334155 !important;
-    }
-
-    @font-face {
-      font-family: 'Bravura Text';
-      font-style: normal;
-      font-display: block;
-      font-weight: 400;
-      src: url('fonts/BravuraText.woff2') format('woff2'),
-           url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/BravuraText.woff2') format('woff2'),
-           url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/BravuraText.woff') format('woff');
-    }
-
-    .music-icon {
-      font-family: 'Bravura Text', serif;
-      font-weight: 400;
-      font-style: normal;
-      line-height: 1;
-      -webkit-font-smoothing: antialiased;
-      font-synthesis: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      max-height: 1.15em;
-      overflow: hidden;
     }
   </style>
   
@@ -857,60 +832,29 @@
 
     const getChordKey = (chord) => `${chord.root}-${chord.type || chord.symbol}-${chord.notes.join(',')}`;
 
-    // Glifi SMuFL semplici — niente simboli "larghi" da spartito (beam, legato intero, ecc.)
-    const SMUFL = {
-      note8thUp: '\uE1D7',
-      noteheadBlack: '\uE0A4',
-      restQuarter: '\uE4E5',
-      rest8th: '\uE4E6',
-      fermataAbove: '\uE4C0',
-      segno: '\uE047',
+    const DIFFICULTY_STARS = {
+      beginner: { count: 1, plus: false },
+      intermediate: { count: 2, plus: false },
+      intermediate_plus: { count: 2, plus: true },
+      advanced: { count: 3, plus: false },
+      advanced_plus: { count: 3, plus: true },
+      pro: { count: 4, plus: false },
+      jazz: { count: 5, plus: false },
     };
 
-    const MusicGlyph = ({ children, className = '', style }) => (
-      <span className={`music-icon ${className}`} style={style} aria-hidden>{children}</span>
-    );
+    const DifficultyStars = ({ diff, size = 12, selected = false, className = '' }) => {
+      const { count, plus } = DIFFICULTY_STARS[diff] || { count: 1, plus: false };
+      const starClass = selected ? 'text-white fill-white' : 'text-amber-400 fill-amber-400';
+      const plusClass = selected ? 'text-white' : 'text-amber-400';
 
-    const RepeatNotes = ({ count, className = '', size = '0.88em', overlap = '-0.2em' }) => (
-      <MusicGlyph className={className} style={{ fontSize: size }}>
-        {Array.from({ length: count }, (_, i) => (
-          <span key={i} style={{ marginLeft: i > 0 ? overlap : 0 }}>{SMUFL.note8thUp}</span>
-        ))}
-      </MusicGlyph>
-    );
-
-    const LegatoIcon = ({ className = '' }) => (
-      <span className={`inline-flex flex-col items-center justify-end leading-none overflow-hidden max-h-[1.15em] ${className}`} aria-hidden>
-        <span
-          className="block border-t-[2px] border-current rounded-t-full"
-          style={{ width: '1em', height: '0.36em', marginBottom: '-0.06em' }}
-        />
-        <MusicGlyph style={{ fontSize: '0.5em' }}>
-          <span style={{ marginRight: '-0.12em' }}>{SMUFL.noteheadBlack}</span>
-          <span>{SMUFL.noteheadBlack}</span>
-        </MusicGlyph>
-      </span>
-    );
-
-    const DifficultyIcon = ({ diff, className = '' }) => {
-      switch (diff) {
-        case 'beginner':
-          return <MusicGlyph className={className}>{SMUFL.note8thUp}</MusicGlyph>;
-        case 'intermediate':
-          return <RepeatNotes count={2} className={className} size="0.82em" overlap="-0.22em" />;
-        case 'intermediate_plus':
-          return <MusicGlyph className={className}>{SMUFL.restQuarter}</MusicGlyph>;
-        case 'advanced':
-          return <RepeatNotes count={3} className={className} size="0.68em" overlap="-0.16em" />;
-        case 'advanced_plus':
-          return <MusicGlyph className={className}>{SMUFL.rest8th}</MusicGlyph>;
-        case 'pro':
-          return <LegatoIcon className={className} />;
-        case 'jazz':
-          return <MusicGlyph className={`${className} text-[0.92em]`}>{SMUFL.segno}</MusicGlyph>;
-        default:
-          return null;
-      }
+      return (
+        <span className={`inline-flex items-center gap-px leading-none ${className}`} aria-hidden>
+          {Array.from({ length: count }, (_, i) => (
+            <Star key={i} size={size} className={starClass} />
+          ))}
+          {plus && <span className={`text-[0.7em] font-bold leading-none ml-px ${plusClass}`}>+</span>}
+        </span>
+      );
     };
 
     function App() {
@@ -1529,7 +1473,7 @@
             <Star size={compact ? 14 : 18} className="text-amber-400 fill-amber-400 shrink-0" />
             <h3 className={`font-bold text-slate-200 ${compact ? 'text-xs' : 'text-sm'}`}>{t.starsTitle}</h3>
             <span className={`text-indigo-400 font-semibold ml-auto flex items-center gap-1.5 ${compact ? 'text-[10px]' : 'text-xs'}`}>
-              <DifficultyIcon diff={difficulty} className={compact ? 'text-sm' : 'text-base'} />
+              <DifficultyStars diff={difficulty} size={compact ? 10 : 12} />
               <span className="hidden sm:inline">{t.difficulties[difficulty]}</span>
             </span>
           </div>
@@ -1554,14 +1498,14 @@
               title={t.difficulties[diff]}
               aria-label={t.difficulties[diff]}
               className={`rounded-lg font-semibold transition-all flex items-center justify-center shrink-0 ${
-                compact ? 'min-w-7 h-7 px-1 text-sm' : 'min-w-9 h-9 px-1.5 text-base'
+                compact ? 'h-7 px-1.5' : 'h-9 px-2'
               }
                 ${difficulty === diff 
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400/40 scale-105' 
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                 }`}
             >
-              <DifficultyIcon diff={diff} />
+              <DifficultyStars diff={diff} size={compact ? 9 : 11} selected={difficulty === diff} />
             </button>
           ))}
         </div>
@@ -1660,8 +1604,8 @@
                     <div className={`bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 ${isFullscreen ? 'w-14 h-14' : 'w-24 h-24 mb-6'}`}>
                       <Play size={isFullscreen ? 28 : 48} className="text-indigo-400 ml-1" />
                     </div>
-                    <h2 className={`font-bold mb-2 flex items-center justify-center gap-3 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>
-                      <DifficultyIcon diff={difficulty} className={isFullscreen ? 'text-2xl' : 'text-4xl'} />
+                    <h2 className={`font-bold mb-2 flex flex-col items-center justify-center gap-2 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>
+                      <DifficultyStars diff={difficulty} size={isFullscreen ? 18 : 24} />
                       <span>{t.level} {t.difficulties[difficulty]}</span>
                     </h2>
                     {!isFullscreen && (
