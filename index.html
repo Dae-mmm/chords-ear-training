@@ -8,6 +8,8 @@
   
   <!-- Tailwind CSS (Caricato via CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     html.fullscreen-active, html.fullscreen-active body {
       overflow: hidden;
@@ -99,6 +101,17 @@
     const getChordCategoryKey = (d) => (d === 'advanced_plus' ? 'advanced' : d);
     const usesTargetListenPenalty = (d) => d === 'beginner' || isIntervalLevel(d);
 
+    const SUPABASE_CFG = window.SUPABASE_CONFIG || {};
+    const SUPABASE_ENABLED = Boolean(
+      SUPABASE_CFG.url &&
+      SUPABASE_CFG.anonKey &&
+      !String(SUPABASE_CFG.url).includes('YOUR_') &&
+      !String(SUPABASE_CFG.anonKey).includes('YOUR_')
+    );
+    const supabaseClient = (SUPABASE_ENABLED && window.supabase)
+      ? window.supabase.createClient(SUPABASE_CFG.url, SUPABASE_CFG.anonKey)
+      : null;
+
     const NOTE_NAMES = {
       en: { C: 'C', Db: 'C#', D: 'D', Eb: 'Eb', E: 'E', F: 'F', Gb: 'F#', G: 'G', Ab: 'Ab', A: 'A', Bb: 'Bb', B: 'B' },
       it: { C: 'Do', Db: 'Do#', D: 'Re', Eb: 'Mib', E: 'Mi', F: 'Fa', Gb: 'Fa#', G: 'Sol', Ab: 'Sol#', A: 'La', Bb: 'Sib', B: 'Si' },
@@ -161,6 +174,27 @@
         exitFullscreen: 'Exit fullscreen',
         rotateDevice: 'Rotate your phone to landscape to continue, or exit fullscreen mode',
         language: 'Language',
+        signIn: 'Sign in',
+        signUp: 'Sign up',
+        signOut: 'Sign out',
+        email: 'Email',
+        password: 'Password',
+        username: 'Username',
+        leaderboard: 'Leaderboard',
+        topPlayers: 'Top players',
+        rank: '#',
+        player: 'Player',
+        streak: 'Streak',
+        you: 'You',
+        noScores: 'No scores yet. Be the first!',
+        account: 'Account',
+        createAccount: 'Create account',
+        haveAccount: 'Already have an account?',
+        noAccount: "Don't have an account?",
+        signInToSave: 'Sign in to compete on the leaderboard',
+        loading: 'Loading...',
+        checkEmail: 'Check your email to confirm your account',
+        close: 'Close',
         starsTitle: 'Star system',
         starRules: {
           beginner: [
@@ -272,6 +306,27 @@
         exitFullscreen: 'Esci da schermo intero',
         rotateDevice: 'Ruota il telefono in orizzontale per continuare, oppure esci dalla modalità schermo intero',
         language: 'Lingua',
+        signIn: 'Accedi',
+        signUp: 'Registrati',
+        signOut: 'Esci',
+        email: 'Email',
+        password: 'Password',
+        username: 'Username',
+        leaderboard: 'Classifica',
+        topPlayers: 'Migliori giocatori',
+        rank: '#',
+        player: 'Giocatore',
+        streak: 'Streak',
+        you: 'Tu',
+        noScores: 'Nessun punteggio. Sii il primo!',
+        account: 'Account',
+        createAccount: 'Crea account',
+        haveAccount: 'Hai già un account?',
+        noAccount: 'Non hai un account?',
+        signInToSave: 'Accedi per comparire in classifica',
+        loading: 'Caricamento...',
+        checkEmail: 'Controlla la email per confermare l\'account',
+        close: 'Chiudi',
         starsTitle: 'Sistema stelle',
         starRules: {
           beginner: [
@@ -383,6 +438,27 @@
         exitFullscreen: 'Quitter le plein écran',
         rotateDevice: 'Tournez votre téléphone en mode paysage pour continuer, ou quittez le plein écran',
         language: 'Langue',
+        signIn: 'Connexion',
+        signUp: 'Inscription',
+        signOut: 'Déconnexion',
+        email: 'E-mail',
+        password: 'Mot de passe',
+        username: "Nom d'utilisateur",
+        leaderboard: 'Classement',
+        topPlayers: 'Meilleurs joueurs',
+        rank: '#',
+        player: 'Joueur',
+        streak: 'Série',
+        you: 'Vous',
+        noScores: 'Aucun score. Soyez le premier !',
+        account: 'Compte',
+        createAccount: 'Créer un compte',
+        haveAccount: 'Déjà un compte ?',
+        noAccount: 'Pas de compte ?',
+        signInToSave: 'Connectez-vous pour le classement',
+        loading: 'Chargement...',
+        checkEmail: 'Vérifiez votre e-mail pour confirmer le compte',
+        close: 'Fermer',
         starsTitle: 'Système d\'étoiles',
         starRules: {
           beginner: [
@@ -494,6 +570,27 @@
         exitFullscreen: 'Salir de pantalla completa',
         rotateDevice: 'Gira el teléfono en horizontal para continuar, o sal de la pantalla completa',
         language: 'Idioma',
+        signIn: 'Iniciar sesión',
+        signUp: 'Registrarse',
+        signOut: 'Cerrar sesión',
+        email: 'Correo',
+        password: 'Contraseña',
+        username: 'Usuario',
+        leaderboard: 'Clasificación',
+        topPlayers: 'Mejores jugadores',
+        rank: '#',
+        player: 'Jugador',
+        streak: 'Racha',
+        you: 'Tú',
+        noScores: 'Sin puntuaciones. ¡Sé el primero!',
+        account: 'Cuenta',
+        createAccount: 'Crear cuenta',
+        haveAccount: '¿Ya tienes cuenta?',
+        noAccount: '¿No tienes cuenta?',
+        signInToSave: 'Inicia sesión para la clasificación',
+        loading: 'Cargando...',
+        checkEmail: 'Revisa tu correo para confirmar la cuenta',
+        close: 'Cerrar',
         starsTitle: 'Sistema de estrellas',
         starRules: {
           beginner: [
@@ -605,6 +702,27 @@
         exitFullscreen: 'Vollbild beenden',
         rotateDevice: 'Drehe dein Handy ins Querformat, um fortzufahren, oder beende den Vollbildmodus',
         language: 'Sprache',
+        signIn: 'Anmelden',
+        signUp: 'Registrieren',
+        signOut: 'Abmelden',
+        email: 'E-Mail',
+        password: 'Passwort',
+        username: 'Benutzername',
+        leaderboard: 'Bestenliste',
+        topPlayers: 'Top-Spieler',
+        rank: '#',
+        player: 'Spieler',
+        streak: 'Serie',
+        you: 'Du',
+        noScores: 'Noch keine Einträge. Sei der Erste!',
+        account: 'Konto',
+        createAccount: 'Konto erstellen',
+        haveAccount: 'Bereits ein Konto?',
+        noAccount: 'Noch kein Konto?',
+        signInToSave: 'Anmelden für die Bestenliste',
+        loading: 'Laden...',
+        checkEmail: 'E-Mail zur Bestätigung prüfen',
+        close: 'Schließen',
         starsTitle: 'Sternesystem',
         starRules: {
           beginner: [
@@ -741,6 +859,10 @@
     const Minimize2 = (props) => <Icon {...props}><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></Icon>;
     const RotateCw = (props) => <Icon {...props}><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></Icon>;
     const Smartphone = (props) => <Icon {...props}><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></Icon>;
+    const LogIn = (props) => <Icon {...props}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></Icon>;
+    const LogOut = (props) => <Icon {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></Icon>;
+    const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Icon>;
+    const X = (props) => <Icon {...props}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></Icon>;
 
     // Frequenze delle note per l'AudioContext
     const FREQUENCIES = {
@@ -1053,6 +1175,133 @@
       const pianoAreaRef = useRef(null);
       const [pianoAreaHeight, setPianoAreaHeight] = useState(88);
 
+      const [user, setUser] = useState(null);
+      const [profile, setProfile] = useState(null);
+      const [authOpen, setAuthOpen] = useState(false);
+      const [authMode, setAuthMode] = useState('login');
+      const [authEmail, setAuthEmail] = useState('');
+      const [authPassword, setAuthPassword] = useState('');
+      const [authUsername, setAuthUsername] = useState('');
+      const [authError, setAuthError] = useState('');
+      const [authLoading, setAuthLoading] = useState(false);
+      const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+      const [leaderboardDifficulty, setLeaderboardDifficulty] = useState('beginner');
+      const [leaderboardData, setLeaderboardData] = useState([]);
+      const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
+      const loadProfileAndScores = async (userId) => {
+        if (!supabaseClient) return;
+        const [{ data: profileData }, { data: scoresData }] = await Promise.all([
+          supabaseClient.from('profiles').select('username').eq('id', userId).single(),
+          supabaseClient.from('leaderboard_scores').select('difficulty, best_streak').eq('user_id', userId),
+        ]);
+        if (profileData) setProfile(profileData);
+        if (scoresData?.length) {
+          setStats(prev => {
+            const next = { ...prev };
+            scoresData.forEach(row => {
+              if (next[row.difficulty]) {
+                next[row.difficulty] = {
+                  ...next[row.difficulty],
+                  best: Math.max(next[row.difficulty].best, row.best_streak),
+                };
+              }
+            });
+            return next;
+          });
+        }
+      };
+
+      const syncScoreToCloud = async (diff, bestStreak) => {
+        if (!supabaseClient || !user) return;
+        await supabaseClient.rpc('upsert_leaderboard_score', {
+          p_difficulty: diff,
+          p_best_streak: bestStreak,
+        });
+      };
+
+      const fetchLeaderboard = async (diff) => {
+        if (!supabaseClient) return;
+        setLeaderboardLoading(true);
+        const { data } = await supabaseClient
+          .from('leaderboard_ranked')
+          .select('rank, username, best_streak, user_id')
+          .eq('difficulty', diff)
+          .order('rank', { ascending: true })
+          .limit(25);
+        setLeaderboardData(data || []);
+        setLeaderboardLoading(false);
+      };
+
+      const openLeaderboard = (diff = difficulty) => {
+        setLeaderboardDifficulty(diff);
+        setLeaderboardOpen(true);
+        fetchLeaderboard(diff);
+      };
+
+      const handleSignIn = async (e) => {
+        e.preventDefault();
+        if (!supabaseClient) return;
+        setAuthLoading(true);
+        setAuthError('');
+        const { error } = await supabaseClient.auth.signInWithPassword({
+          email: authEmail.trim(),
+          password: authPassword,
+        });
+        if (error) setAuthError(error.message);
+        else {
+          setAuthOpen(false);
+          setAuthPassword('');
+        }
+        setAuthLoading(false);
+      };
+
+      const handleSignUp = async (e) => {
+        e.preventDefault();
+        if (!supabaseClient) return;
+        setAuthLoading(true);
+        setAuthError('');
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: authEmail.trim(),
+          password: authPassword,
+          options: { data: { username: authUsername.trim() } },
+        });
+        if (error) {
+          setAuthError(error.message);
+        } else if (data.session) {
+          setAuthOpen(false);
+          setAuthPassword('');
+        } else {
+          setAuthError(t.checkEmail);
+        }
+        setAuthLoading(false);
+      };
+
+      const handleSignOut = async () => {
+        if (!supabaseClient) return;
+        await supabaseClient.auth.signOut();
+        setProfile(null);
+      };
+
+      useEffect(() => {
+        if (!supabaseClient) return;
+        let mounted = true;
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+          if (!mounted) return;
+          setUser(session?.user ?? null);
+          if (session?.user) loadProfileAndScores(session.user.id);
+        });
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+          setUser(session?.user ?? null);
+          if (session?.user) loadProfileAndScores(session.user.id);
+          else setProfile(null);
+        });
+        return () => {
+          mounted = false;
+          subscription.unsubscribe();
+        };
+      }, []);
+
       const initAudio = () => {
         if (!audioCtxRef.current) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1338,12 +1587,16 @@
           setStats(prev => {
             const currentDiffStats = prev[difficulty];
             const newCurrent = currentDiffStats.current + earned;
+            const newBest = Math.max(currentDiffStats.best, newCurrent);
+            if (supabaseClient && user && newBest > currentDiffStats.best) {
+              syncScoreToCloud(difficulty, newBest);
+            }
             return {
               ...prev,
               [difficulty]: {
                 current: newCurrent,
-                best: Math.max(currentDiffStats.best, newCurrent)
-              }
+                best: newBest,
+              },
             };
           });
 
@@ -1487,6 +1740,182 @@
         </button>
       );
 
+      const accountBar = (compact = false) => {
+        if (!supabaseClient) return null;
+        const btnClass = compact
+          ? 'flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors shrink-0'
+          : 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors shrink-0';
+
+        if (user) {
+          return (
+            <div className={`flex items-center ${compact ? 'gap-1' : 'gap-1.5'} shrink-0`}>
+              <button type="button" onClick={() => openLeaderboard()} className={btnClass} title={t.leaderboard}>
+                <Trophy size={compact ? 12 : 14} className="text-amber-400" />
+                {!compact && <span>{t.leaderboard}</span>}
+              </button>
+              <span className={`text-slate-400 truncate max-w-[4.5rem] ${compact ? 'text-[10px]' : 'text-xs'}`} title={profile?.username}>
+                {profile?.username || '…'}
+              </span>
+              <button type="button" onClick={handleSignOut} className={btnClass} title={t.signOut}>
+                <LogOut size={compact ? 12 : 14} />
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <button type="button" onClick={() => setAuthOpen(true)} className={btnClass} title={t.signIn}>
+            <LogIn size={compact ? 12 : 14} />
+            {!compact && <span>{t.signIn}</span>}
+          </button>
+        );
+      };
+
+      const authModal = () => {
+        if (!authOpen || !supabaseClient) return null;
+        return (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60" onClick={() => setAuthOpen(false)}>
+            <div className="bg-slate-800 border border-slate-600 rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <User size={20} className="text-indigo-400" />
+                  {authMode === 'login' ? t.signIn : t.createAccount}
+                </h2>
+                <button type="button" onClick={() => setAuthOpen(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={authMode === 'login' ? handleSignIn : handleSignUp} className="space-y-3">
+                {authMode === 'signup' && (
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">{t.username}</label>
+                    <input
+                      type="text"
+                      value={authUsername}
+                      onChange={e => setAuthUsername(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      pattern="[a-zA-Z0-9_]{2,24}"
+                      required
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">{t.email}</label>
+                  <input
+                    type="email"
+                    value={authEmail}
+                    onChange={e => setAuthEmail(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">{t.password}</label>
+                  <input
+                    type="password"
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    minLength={6}
+                    required
+                  />
+                </div>
+                {authError && <p className="text-red-400 text-xs">{authError}</p>}
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-colors"
+                >
+                  {authLoading ? t.loading : (authMode === 'login' ? t.signIn : t.signUp)}
+                </button>
+              </form>
+              <p className="text-center text-xs text-slate-400 mt-4">
+                {authMode === 'login' ? (
+                  <>{t.noAccount} <button type="button" onClick={() => { setAuthMode('signup'); setAuthError(''); }} className="text-indigo-400 hover:underline">{t.signUp}</button></>
+                ) : (
+                  <>{t.haveAccount} <button type="button" onClick={() => { setAuthMode('login'); setAuthError(''); }} className="text-indigo-400 hover:underline">{t.signIn}</button></>
+                )}
+              </p>
+            </div>
+          </div>
+        );
+      };
+
+      const leaderboardModal = () => {
+        if (!leaderboardOpen || !supabaseClient) return null;
+        return (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60" onClick={() => setLeaderboardOpen(false)}>
+            <div className="bg-slate-800 border border-slate-600 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-slate-700 shrink-0">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Trophy size={20} className="text-amber-400" />
+                  {t.leaderboard}
+                </h2>
+                <button type="button" onClick={() => setLeaderboardOpen(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-3 border-b border-slate-700 shrink-0 overflow-x-auto">
+                <div className="flex gap-1">
+                  {DIFFICULTIES.map(diff => (
+                    <button
+                      key={diff}
+                      type="button"
+                      onClick={() => { setLeaderboardDifficulty(diff); fetchLeaderboard(diff); }}
+                      title={t.difficulties[diff]}
+                      className={`rounded-lg px-2 py-1.5 transition-colors shrink-0 ${
+                        leaderboardDifficulty === diff
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      <DifficultyStars diff={diff} size={9} selected={leaderboardDifficulty === diff} />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-400 mt-2">{t.difficulties[leaderboardDifficulty]} — {t.topPlayers}</p>
+              </div>
+              <div className="overflow-y-auto flex-1 p-3">
+                {leaderboardLoading ? (
+                  <p className="text-center text-slate-400 py-8">{t.loading}</p>
+                ) : leaderboardData.length === 0 ? (
+                  <p className="text-center text-slate-400 py-8">{t.noScores}</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-slate-400 text-xs border-b border-slate-700">
+                        <th className="text-left py-2 pr-2 font-medium">{t.rank}</th>
+                        <th className="text-left py-2 font-medium">{t.player}</th>
+                        <th className="text-right py-2 pl-2 font-medium">{t.streak}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboardData.map(row => {
+                        const isMe = user && row.user_id === user.id;
+                        return (
+                          <tr
+                            key={`${row.user_id}-${row.rank}`}
+                            className={`border-b border-slate-700/50 ${isMe ? 'bg-indigo-500/10 text-indigo-200' : 'text-slate-200'}`}
+                          >
+                            <td className="py-2 pr-2 font-bold text-amber-400">{row.rank}</td>
+                            <td className="py-2 truncate max-w-[10rem]">
+                              {row.username}{isMe ? ` (${t.you})` : ''}
+                            </td>
+                            <td className="py-2 pl-2 text-right font-bold">
+                              {row.best_streak} <Star size={12} className="inline fill-amber-400 text-amber-400" />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
       const statsBlock = (compact = false) => (
         <div className={`flex items-center bg-slate-800/80 rounded-2xl border border-slate-700 shrink-0 justify-center ${
           compact ? 'gap-2 px-2 py-1' : 'gap-4 px-4 py-2.5'
@@ -1618,7 +2047,10 @@
                   {difficultySelector(false)}
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  {langSelector()}
+                  <div className="flex items-center gap-2">
+                    {langSelector()}
+                    {accountBar(false)}
+                  </div>
                   {statsBlock(false)}
                 </div>
               </div>
@@ -1643,6 +2075,7 @@
               <div className={`flex items-center shrink-0 ${isFullscreen ? 'gap-1.5' : 'gap-3 w-full md:w-auto justify-center md:justify-end'}`}>
                 {isFullscreen && fullscreenBtn(true)}
                 {!isFullscreen && langSelector()}
+                {!isFullscreen && accountBar(isFullscreen)}
                 {statsBlock(isFullscreen)}
               </div>
             </div>
@@ -1670,6 +2103,10 @@
                   </div>
 
                   {starsInfoBox(isFullscreen)}
+
+                  {supabaseClient && !user && !isFullscreen && (
+                    <p className="text-xs text-slate-500 text-center max-w-sm">{t.signInToSave}</p>
+                  )}
 
                   <button 
                     onClick={startGame}
@@ -1874,6 +2311,8 @@
               )}
             </div>
           </div>
+          {authModal()}
+          {leaderboardModal()}
         </div>
       );
     }
