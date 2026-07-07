@@ -14,6 +14,51 @@
       overscroll-behavior: none;
       touch-action: manipulation;
     }
+
+    .piano-keys {
+      color-scheme: only light;
+      forced-color-adjust: none;
+    }
+
+    .piano-key {
+      -webkit-tap-highlight-color: transparent;
+      appearance: none;
+      -webkit-appearance: none;
+      color-scheme: only light;
+      forced-color-adjust: none;
+      background-image: none;
+      box-shadow: none;
+    }
+
+    .piano-key--white {
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #64748b !important;
+    }
+
+    .piano-key--white.piano-key--selected {
+      background: #c7d2fe !important;
+      background-color: #c7d2fe !important;
+    }
+
+    .piano-key--white:active {
+      background: #e2e8f0 !important;
+      background-color: #e2e8f0 !important;
+    }
+
+    .piano-key--black {
+      background: #1e293b !important;
+      background-color: #1e293b !important;
+      border-color: #020617 !important;
+      color: #94a3b8 !important;
+    }
+
+    .piano-key--black.piano-key--selected {
+      background: #4f46e5 !important;
+      background-color: #4f46e5 !important;
+      color: #e0e7ff !important;
+    }
   </style>
   
   <!-- React & ReactDOM (Caricati via CDN) -->
@@ -931,7 +976,7 @@
                 className={`w-full ${isFullscreen ? 'h-full overflow-hidden flex justify-center items-end' : 'overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x'}`}
               >
                 <div
-                  className="relative mx-auto select-none"
+                  className="piano-keys relative mx-auto select-none"
                   style={{ width: `${pianoWidth}px`, height: `${WHITE_KEY_HEIGHT}px` }}
                 >
                   {pianoKeys.map((key) => {
@@ -946,31 +991,25 @@
                       leftPosition = (whiteKeyIndex * WHITE_KEY_WIDTH) - (BLACK_KEY_WIDTH / 2);
                     }
 
-                    const whiteDefault = '#ffffff';
-                    const whiteSelected = '#c7d2fe';
-                    const blackDefault = '#0f172a';
-                    const blackSelected = '#4f46e5';
-
                     return (
                       <div
                         key={key.id}
                         onClick={() => assignNoteToActiveBox(key.id)}
-                        className={`absolute cursor-pointer border flex flex-col justify-end items-center transition-colors duration-150 select-none touch-manipulation
-                          ${isWhite 
-                            ? 'rounded-b-lg border-slate-300 z-0' 
-                            : 'rounded-b-md border-black z-10'
-                          }`}
+                        role="button"
+                        className={`piano-key absolute cursor-pointer border flex flex-col justify-end items-center select-none touch-manipulation
+                          ${isWhite ? 'piano-key--white rounded-b-lg z-0' : 'piano-key--black rounded-b-md z-10'}
+                          ${isSelected ? 'piano-key--selected' : ''}`}
                         style={{
                           left: `${leftPosition}px`,
                           width: `${isWhite ? WHITE_KEY_WIDTH : BLACK_KEY_WIDTH}px`,
                           height: `${isWhite ? WHITE_KEY_HEIGHT : BLACK_KEY_HEIGHT}px`,
                           paddingBottom: isFullscreen ? '6px' : '16px',
-                          backgroundColor: isWhite
-                            ? (isSelected ? whiteSelected : whiteDefault)
-                            : (isSelected ? blackSelected : blackDefault),
                         }}
                       >
-                        <span className={`font-semibold pointer-events-none ${isFullscreen ? 'text-[9px]' : 'text-xs'} ${isWhite ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <span
+                          className="font-semibold pointer-events-none piano-key-label"
+                          style={{ fontSize: isFullscreen ? Math.max(9, Math.min(12, WHITE_KEY_HEIGHT * 0.1)) + 'px' : '12px' }}
+                        >
                           {isWhite && key.label}
                         </span>
                       </div>
