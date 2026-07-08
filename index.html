@@ -1955,37 +1955,36 @@
 
       const accountBar = (compact = false) => {
         if (!supabaseClient) return null;
+        const iconSize = compact ? 14 : 16;
         const btnClass = compact
-          ? 'flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors shrink-0'
-          : 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors shrink-0';
+          ? 'flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors shrink-0'
+          : 'flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors shrink-0';
 
         if (user) {
           return (
             <div className={`flex items-center ${compact ? 'gap-1' : 'gap-1.5'} shrink-0`}>
-              <button type="button" onClick={() => openLeaderboard()} className={btnClass} title={t.leaderboard}>
-                <Trophy size={compact ? 12 : 14} className="text-amber-400" />
-                {!compact && <span>{t.leaderboard}</span>}
+              <button type="button" onClick={() => openLeaderboard()} className={btnClass} title={t.leaderboard} aria-label={t.leaderboard}>
+                <Trophy size={iconSize} className="text-amber-400" />
               </button>
               <button
                 type="button"
                 onClick={openProfile}
-                className={`${btnClass} max-w-[5.5rem]`}
-                title={t.profile}
+                className={btnClass}
+                title={profile?.username ? `${t.profile}: ${profile.username}` : t.profile}
+                aria-label={t.profile}
               >
-                <User size={compact ? 12 : 14} className="text-indigo-400 shrink-0" />
-                <span className={`truncate ${compact ? 'text-[10px]' : 'text-xs'}`}>{profile?.username || '…'}</span>
+                <User size={iconSize} className="text-indigo-400" />
               </button>
-              <button type="button" onClick={handleSignOut} className={btnClass} title={t.signOut}>
-                <LogOut size={compact ? 12 : 14} />
+              <button type="button" onClick={handleSignOut} className={btnClass} title={t.signOut} aria-label={t.signOut}>
+                <LogOut size={iconSize} />
               </button>
             </div>
           );
         }
 
         return (
-          <button type="button" onClick={() => setAuthOpen(true)} className={btnClass} title={t.signIn}>
-            <LogIn size={compact ? 12 : 14} />
-            {!compact && <span>{t.signIn}</span>}
+          <button type="button" onClick={() => setAuthOpen(true)} className={btnClass} title={t.signIn} aria-label={t.signIn}>
+            <LogIn size={iconSize} />
           </button>
         );
       };
