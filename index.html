@@ -205,6 +205,19 @@
         loading: 'Loading...',
         checkEmail: 'Check your email to confirm your account',
         close: 'Close',
+        profile: 'Profile',
+        nickname: 'Nickname',
+        newPassword: 'New password',
+        confirmPassword: 'Confirm password',
+        saveChanges: 'Save changes',
+        changePassword: 'Change password',
+        highScoreHistory: 'Recent high scores',
+        noHistory: 'No high scores recorded yet',
+        profileUpdated: 'Profile updated',
+        passwordUpdated: 'Password updated',
+        invalidCredentials: 'Invalid username or password',
+        usernameTaken: 'Username already taken',
+        passwordsMismatch: 'Passwords do not match',
         starsTitle: 'Star system',
         starRules: {
           beginner: [
@@ -337,6 +350,19 @@
         loading: 'Caricamento...',
         checkEmail: 'Controlla la email per confermare l\'account',
         close: 'Chiudi',
+        profile: 'Profilo',
+        nickname: 'Nickname',
+        newPassword: 'Nuova password',
+        confirmPassword: 'Conferma password',
+        saveChanges: 'Salva modifiche',
+        changePassword: 'Cambia password',
+        highScoreHistory: 'Ultimi record',
+        noHistory: 'Nessun record registrato',
+        profileUpdated: 'Profilo aggiornato',
+        passwordUpdated: 'Password aggiornata',
+        invalidCredentials: 'Username o password non validi',
+        usernameTaken: 'Username già in uso',
+        passwordsMismatch: 'Le password non coincidono',
         starsTitle: 'Sistema stelle',
         starRules: {
           beginner: [
@@ -469,6 +495,19 @@
         loading: 'Chargement...',
         checkEmail: 'Vérifiez votre e-mail pour confirmer le compte',
         close: 'Fermer',
+        profile: 'Profil',
+        nickname: 'Pseudo',
+        newPassword: 'Nouveau mot de passe',
+        confirmPassword: 'Confirmer le mot de passe',
+        saveChanges: 'Enregistrer',
+        changePassword: 'Changer le mot de passe',
+        highScoreHistory: 'Derniers records',
+        noHistory: 'Aucun record enregistré',
+        profileUpdated: 'Profil mis à jour',
+        passwordUpdated: 'Mot de passe mis à jour',
+        invalidCredentials: "Nom d'utilisateur ou mot de passe invalide",
+        usernameTaken: "Nom d'utilisateur déjà pris",
+        passwordsMismatch: 'Les mots de passe ne correspondent pas',
         starsTitle: 'Système d\'étoiles',
         starRules: {
           beginner: [
@@ -601,6 +640,19 @@
         loading: 'Cargando...',
         checkEmail: 'Revisa tu correo para confirmar la cuenta',
         close: 'Cerrar',
+        profile: 'Perfil',
+        nickname: 'Apodo',
+        newPassword: 'Nueva contraseña',
+        confirmPassword: 'Confirmar contraseña',
+        saveChanges: 'Guardar cambios',
+        changePassword: 'Cambiar contraseña',
+        highScoreHistory: 'Últimos récords',
+        noHistory: 'Sin récords registrados',
+        profileUpdated: 'Perfil actualizado',
+        passwordUpdated: 'Contraseña actualizada',
+        invalidCredentials: 'Usuario o contraseña inválidos',
+        usernameTaken: 'Usuario ya en uso',
+        passwordsMismatch: 'Las contraseñas no coinciden',
         starsTitle: 'Sistema de estrellas',
         starRules: {
           beginner: [
@@ -733,6 +785,19 @@
         loading: 'Laden...',
         checkEmail: 'E-Mail zur Bestätigung prüfen',
         close: 'Schließen',
+        profile: 'Profil',
+        nickname: 'Nickname',
+        newPassword: 'Neues Passwort',
+        confirmPassword: 'Passwort bestätigen',
+        saveChanges: 'Speichern',
+        changePassword: 'Passwort ändern',
+        highScoreHistory: 'Letzte Bestwerte',
+        noHistory: 'Noch keine Bestwerte',
+        profileUpdated: 'Profil aktualisiert',
+        passwordUpdated: 'Passwort aktualisiert',
+        invalidCredentials: 'Ungültiger Benutzername oder Passwort',
+        usernameTaken: 'Benutzername bereits vergeben',
+        passwordsMismatch: 'Passwörter stimmen nicht überein',
         starsTitle: 'Sternesystem',
         starRules: {
           beginner: [
@@ -1043,6 +1108,45 @@
       );
     };
 
+    const HighScoreChart = ({ data, lang, t, difficulties }) => {
+      if (!data?.length) {
+        return <p className="text-slate-400 text-sm text-center py-6">{t.noHistory}</p>;
+      }
+
+      const chartData = [...data].reverse();
+      const max = Math.max(...chartData.map(d => d.streak), 1);
+      const chartH = 110;
+      const gap = 8;
+      const barW = Math.min(36, Math.max(18, Math.floor(320 / chartData.length) - gap));
+      const width = chartData.length * (barW + gap) + gap;
+      const locale = ({ en: 'en', it: 'it', fr: 'fr', es: 'es', de: 'de' })[lang] || 'en';
+      const dateFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
+
+      return (
+        <div className="overflow-x-auto -mx-1 px-1">
+          <svg width={width} height={chartH + 40} className="mx-auto block" aria-hidden>
+            {chartData.map((row, i) => {
+              const h = Math.max(4, (row.streak / max) * chartH);
+              const x = gap + i * (barW + gap);
+              const y = chartH - h;
+              return (
+                <g key={row.id}>
+                  <rect x={x} y={y} width={barW} height={h} rx={4} className="fill-amber-500" />
+                  <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill="#fbbf24" fontSize="10" fontWeight="bold">
+                    {row.streak}
+                  </text>
+                  <text x={x + barW / 2} y={chartH + 16} textAnchor="middle" fill="#94a3b8" fontSize="9">
+                    {dateFmt.format(new Date(row.achieved_at))}
+                  </text>
+                  <title>{difficulties[row.difficulty]} — {row.streak}</title>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      );
+    };
+
     function App() {
       const [lang, setLang] = useState(getStoredLang);
       const [gameState, setGameState] = useState('idle'); 
@@ -1198,6 +1302,90 @@
       const [leaderboardDifficulty, setLeaderboardDifficulty] = useState('beginner');
       const [leaderboardData, setLeaderboardData] = useState([]);
       const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+      const [profileOpen, setProfileOpen] = useState(false);
+      const [scoreHistory, setScoreHistory] = useState([]);
+      const [profileLoading, setProfileLoading] = useState(false);
+      const [editUsername, setEditUsername] = useState('');
+      const [newPassword, setNewPassword] = useState('');
+      const [confirmPassword, setConfirmPassword] = useState('');
+      const [profileMessage, setProfileMessage] = useState('');
+      const [profileError, setProfileError] = useState('');
+      const [profileSaving, setProfileSaving] = useState(false);
+
+      const loadScoreHistory = async (userId) => {
+        if (!supabaseClient) return;
+        const { data } = await supabaseClient
+          .from('score_history')
+          .select('id, difficulty, streak, achieved_at')
+          .eq('user_id', userId)
+          .order('achieved_at', { ascending: false })
+          .limit(15);
+        setScoreHistory(data || []);
+      };
+
+      const openProfile = async () => {
+        if (!user) return;
+        setProfileOpen(true);
+        setProfileMessage('');
+        setProfileError('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setEditUsername(profile?.username || '');
+        setProfileLoading(true);
+        await loadScoreHistory(user.id);
+        setProfileLoading(false);
+      };
+
+      const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        if (!supabaseClient || !user) return;
+        setProfileSaving(true);
+        setProfileError('');
+        setProfileMessage('');
+        const trimmed = editUsername.trim();
+        if (!/^[a-zA-Z0-9_]{2,24}$/.test(trimmed)) {
+          setProfileError(t.username);
+          setProfileSaving(false);
+          return;
+        }
+        const { error } = await supabaseClient
+          .from('profiles')
+          .update({ username: trimmed, updated_at: new Date().toISOString() })
+          .eq('id', user.id);
+        if (error) {
+          setProfileError(error.code === '23505' ? t.usernameTaken : error.message);
+        } else {
+          setProfile({ username: trimmed });
+          setProfileMessage(t.profileUpdated);
+        }
+        setProfileSaving(false);
+      };
+
+      const handleUpdatePassword = async (e) => {
+        e.preventDefault();
+        if (!supabaseClient || !user) return;
+        setProfileSaving(true);
+        setProfileError('');
+        setProfileMessage('');
+        if (newPassword.length < 6) {
+          setProfileError(t.password);
+          setProfileSaving(false);
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          setProfileError(t.passwordsMismatch);
+          setProfileSaving(false);
+          return;
+        }
+        const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+        if (error) setProfileError(error.message);
+        else {
+          setProfileMessage(t.passwordUpdated);
+          setNewPassword('');
+          setConfirmPassword('');
+        }
+        setProfileSaving(false);
+      };
 
       const loadProfileAndScores = async (userId) => {
         if (!supabaseClient) return;
@@ -1228,6 +1416,7 @@
           p_difficulty: diff,
           p_best_streak: bestStreak,
         });
+        if (profileOpen) loadScoreHistory(user.id);
       };
 
       const fetchLeaderboard = async (diff) => {
@@ -1254,11 +1443,19 @@
         if (!supabaseClient) return;
         setAuthLoading(true);
         setAuthError('');
+        const { data: email, error: lookupError } = await supabaseClient.rpc('get_email_for_username', {
+          p_username: authUsername.trim(),
+        });
+        if (lookupError || !email) {
+          setAuthError(t.invalidCredentials);
+          setAuthLoading(false);
+          return;
+        }
         const { error } = await supabaseClient.auth.signInWithPassword({
-          email: authEmail.trim(),
+          email,
           password: authPassword,
         });
-        if (error) setAuthError(error.message);
+        if (error) setAuthError(t.invalidCredentials);
         else {
           setAuthOpen(false);
           setAuthPassword('');
@@ -1769,9 +1966,15 @@
                 <Trophy size={compact ? 12 : 14} className="text-amber-400" />
                 {!compact && <span>{t.leaderboard}</span>}
               </button>
-              <span className={`text-slate-400 truncate max-w-[4.5rem] ${compact ? 'text-[10px]' : 'text-xs'}`} title={profile?.username}>
-                {profile?.username || '…'}
-              </span>
+              <button
+                type="button"
+                onClick={openProfile}
+                className={`${btnClass} max-w-[5.5rem]`}
+                title={t.profile}
+              >
+                <User size={compact ? 12 : 14} className="text-indigo-400 shrink-0" />
+                <span className={`truncate ${compact ? 'text-[10px]' : 'text-xs'}`}>{profile?.username || '…'}</span>
+              </button>
               <button type="button" onClick={handleSignOut} className={btnClass} title={t.signOut}>
                 <LogOut size={compact ? 12 : 14} />
               </button>
@@ -1802,29 +2005,31 @@
                 </button>
               </div>
               <form onSubmit={authMode === 'login' ? handleSignIn : handleSignUp} className="space-y-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">{t.username}</label>
+                  <input
+                    type="text"
+                    value={authUsername}
+                    onChange={e => setAuthUsername(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    pattern="[a-zA-Z0-9_]{2,24}"
+                    autoComplete="username"
+                    required
+                  />
+                </div>
                 {authMode === 'signup' && (
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">{t.username}</label>
+                    <label className="block text-xs text-slate-400 mb-1">{t.email}</label>
                     <input
-                      type="text"
-                      value={authUsername}
-                      onChange={e => setAuthUsername(e.target.value)}
+                      type="email"
+                      value={authEmail}
+                      onChange={e => setAuthEmail(e.target.value)}
                       className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                      pattern="[a-zA-Z0-9_]{2,24}"
+                      autoComplete="email"
                       required
                     />
                   </div>
                 )}
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">{t.email}</label>
-                  <input
-                    type="email"
-                    value={authEmail}
-                    onChange={e => setAuthEmail(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">{t.password}</label>
                   <input
@@ -1926,6 +2131,92 @@
                     </tbody>
                   </table>
                 )}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const profileModal = () => {
+        if (!profileOpen || !user) return null;
+        return (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60" onClick={() => setProfileOpen(false)}>
+            <div className="bg-slate-800 border border-slate-600 rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-slate-700 shrink-0">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <User size={20} className="text-indigo-400" />
+                  {t.profile}
+                </h2>
+                <button type="button" onClick={() => setProfileOpen(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 p-4 space-y-6">
+                <form onSubmit={handleUpdateProfile} className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-300">{t.nickname}</h3>
+                  <input
+                    type="text"
+                    value={editUsername}
+                    onChange={e => setEditUsername(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    pattern="[a-zA-Z0-9_]{2,24}"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-2 rounded-xl text-sm transition-colors"
+                  >
+                    {t.saveChanges}
+                  </button>
+                </form>
+
+                <form onSubmit={handleUpdatePassword} className="space-y-3 pt-2 border-t border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-300">{t.changePassword}</h3>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder={t.newPassword}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    minLength={6}
+                    autoComplete="new-password"
+                  />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder={t.confirmPassword}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    minLength={6}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="submit"
+                    disabled={profileSaving || !newPassword}
+                    className="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-semibold py-2 rounded-xl text-sm transition-colors"
+                  >
+                    {t.changePassword}
+                  </button>
+                </form>
+
+                {(profileMessage || profileError) && (
+                  <p className={`text-xs text-center ${profileError ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {profileError || profileMessage}
+                  </p>
+                )}
+
+                <div className="pt-2 border-t border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <Trophy size={16} className="text-amber-400" />
+                    {t.highScoreHistory}
+                  </h3>
+                  {profileLoading ? (
+                    <p className="text-slate-400 text-sm text-center py-6">{t.loading}</p>
+                  ) : (
+                    <HighScoreChart data={scoreHistory} lang={lang} t={t} difficulties={t.difficulties} />
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -2329,6 +2620,7 @@
           </div>
           {authModal()}
           {leaderboardModal()}
+          {profileModal()}
         </div>
       );
     }
