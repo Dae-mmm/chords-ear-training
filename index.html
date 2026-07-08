@@ -108,8 +108,18 @@
       !String(SUPABASE_CFG.url).includes('YOUR_') &&
       !String(SUPABASE_CFG.anonKey).includes('YOUR_')
     );
+    const getAuthRedirectUrl = () => {
+      if (SUPABASE_CFG.redirectUrl) return SUPABASE_CFG.redirectUrl;
+      return `${window.location.origin}${window.location.pathname}`;
+    };
     const supabaseClient = (SUPABASE_ENABLED && window.supabase)
-      ? window.supabase.createClient(SUPABASE_CFG.url, SUPABASE_CFG.anonKey)
+      ? window.supabase.createClient(SUPABASE_CFG.url, SUPABASE_CFG.anonKey, {
+          auth: {
+            detectSessionInUrl: true,
+            persistSession: true,
+            autoRefreshToken: true,
+          },
+        })
       : null;
 
     const NOTE_NAMES = {
@@ -1264,7 +1274,10 @@
         const { data, error } = await supabaseClient.auth.signUp({
           email: authEmail.trim(),
           password: authPassword,
-          options: { data: { username: authUsername.trim() } },
+          options: {
+            data: { username: authUsername.trim() },
+            emailRedirectTo: getAuthRedirectUrl(),
+          },
         });
         if (error) {
           setAuthError(error.message);
@@ -1291,10 +1304,13 @@
           setUser(session?.user ?? null);
           if (session?.user) loadProfileAndScores(session.user.id);
         });
-        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
           setUser(session?.user ?? null);
           if (session?.user) loadProfileAndScores(session.user.id);
           else setProfile(null);
+          if (event === 'SIGNED_IN' && (window.location.hash.includes('access_token') || window.location.search.includes('code='))) {
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+          }
         });
         return () => {
           mounted = false;

@@ -11,10 +11,30 @@ You already have a Supabase account. Create a project (or use an existing one).
 
 ## 3. Configure authentication
 
+### Email provider
+
 In **Authentication → Providers → Email**:
 
 - Enable Email provider
 - For quick testing you can disable **Confirm email** (optional)
+
+### Redirect URLs (important!)
+
+In **Authentication → URL Configuration**:
+
+1. **Site URL** — set to your live app URL, e.g.  
+   `https://dae-mmm.github.io/chords-ear-training/`  
+   (not `http://localhost:3000`)
+
+2. **Redirect URLs** — add every URL where the app can be opened, e.g.:
+   ```
+   https://dae-mmm.github.io/chords-ear-training/
+   https://dae-mmm.github.io/chords-ear-training/index.html
+   http://localhost:3000
+   http://127.0.0.1:5500
+   ```
+
+The confirmation email will redirect to `redirectUrl` in `supabase-config.js`, or automatically to the current page URL if omitted.
 
 ## 4. Add credentials to the app
 
@@ -28,6 +48,7 @@ In **Authentication → Providers → Email**:
 window.SUPABASE_CONFIG = {
   url: 'https://xxxx.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  redirectUrl: 'https://your-domain.com/path/', // optional, for email confirmation
 };
 ```
 
