@@ -22,16 +22,14 @@ In **Authentication → Providers → Email**:
 
 In **Authentication → URL Configuration**:
 
-1. **Site URL** — set to your live app URL, e.g.  
-   `https://dae-mmm.github.io/chords-ear-training/`  
-   (not `http://localhost:3000`)
+1. **Site URL** — set to your live app URL:  
+   `https://chords-ear-training.vercel.app`
 
-2. **Redirect URLs** — add every URL where the app can be opened, e.g.:
+2. **Redirect URLs** — add:
    ```
-   https://dae-mmm.github.io/chords-ear-training/
-   https://dae-mmm.github.io/chords-ear-training/index.html
-   http://localhost:3000
-   http://127.0.0.1:5500
+   https://chords-ear-training.vercel.app
+   https://chords-ear-training.vercel.app/
+   https://chords-ear-training.vercel.app/index.html
    ```
 
 The confirmation email will redirect to `redirectUrl` in `supabase-config.js`, or automatically to the current page URL if omitted.
