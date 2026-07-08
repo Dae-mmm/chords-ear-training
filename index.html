@@ -1123,26 +1123,31 @@
       );
     };
 
-    const HighScoreChart = ({ data, lang, t, difficulties }) => {
+    const HighScoreChart = ({ data, lang, t }) => {
       if (!data?.length) {
         return <p className="text-slate-400 text-sm text-center py-6">{t.noHistory}</p>;
       }
 
       const chartData = [...data].reverse();
       const max = Math.max(...chartData.map(d => d.streak), 1);
-      const chartH = 110;
+      const chartH = 120;
+      const padL = 30;
       const gap = 8;
-      const barW = Math.min(36, Math.max(18, Math.floor(320 / chartData.length) - gap));
-      const width = chartData.length * (barW + gap) + gap;
+      const barW = Math.min(36, Math.max(18, Math.floor(290 / chartData.length) - gap));
+      const width = padL + chartData.length * (barW + gap) + gap;
       const locale = ({ en: 'en', it: 'it', fr: 'fr', es: 'es', de: 'de' })[lang] || 'en';
       const dateFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
 
       return (
         <div className="overflow-x-auto -mx-1 px-1">
-          <svg width={width} height={chartH + 40} className="mx-auto block" aria-hidden>
+          <svg width={width} height={chartH + 44} className="mx-auto block" aria-hidden>
+            <line x1={padL} y1={10} x2={width - gap} y2={10} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+            <text x={padL - 4} y={13} textAnchor="end" fill="#94a3b8" fontSize="9" fontWeight="bold">{max}</text>
+            <text x={padL - 4} y={chartH + 4} textAnchor="end" fill="#64748b" fontSize="9">0</text>
+            <line x1={padL} y1={chartH} x2={width - gap} y2={chartH} stroke="#334155" strokeWidth={1} />
             {chartData.map((row, i) => {
-              const h = Math.max(4, (row.streak / max) * chartH);
-              const x = gap + i * (barW + gap);
+              const h = Math.max(4, (row.streak / max) * (chartH - 12));
+              const x = padL + gap + i * (barW + gap);
               const y = chartH - h;
               return (
                 <g key={row.id}>
@@ -1150,10 +1155,9 @@
                   <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill="#fbbf24" fontSize="10" fontWeight="bold">
                     {row.streak}
                   </text>
-                  <text x={x + barW / 2} y={chartH + 16} textAnchor="middle" fill="#94a3b8" fontSize="9">
+                  <text x={x + barW / 2} y={chartH + 18} textAnchor="middle" fill="#94a3b8" fontSize="9">
                     {dateFmt.format(new Date(row.achieved_at))}
                   </text>
-                  <title>{difficulties[row.difficulty]} — {row.streak}</title>
                 </g>
               );
             })}
@@ -1318,6 +1322,7 @@
       const [leaderboardData, setLeaderboardData] = useState([]);
       const [leaderboardLoading, setLeaderboardLoading] = useState(false);
       const [profileOpen, setProfileOpen] = useState(false);
+      const [profileHistoryDifficulty, setProfileHistoryDifficulty] = useState('beginner');
       const [scoreHistory, setScoreHistory] = useState([]);
       const [profileLoading, setProfileLoading] = useState(false);
       const [editUsername, setEditUsername] = useState('');
@@ -1327,15 +1332,18 @@
       const [profileError, setProfileError] = useState('');
       const [profileSaving, setProfileSaving] = useState(false);
 
-      const loadScoreHistory = async (userId) => {
+      const loadScoreHistory = async (userId, diff) => {
         if (!supabaseClient) return;
+        setProfileLoading(true);
         const { data } = await supabaseClient
           .from('score_history')
           .select('id, difficulty, streak, achieved_at')
           .eq('user_id', userId)
+          .eq('difficulty', diff)
           .order('achieved_at', { ascending: false })
-          .limit(15);
+          .limit(20);
         setScoreHistory(data || []);
+        setProfileLoading(false);
       };
 
       const openProfile = async () => {
@@ -1346,9 +1354,8 @@
         setNewPassword('');
         setConfirmPassword('');
         setEditUsername(profile?.username || '');
-        setProfileLoading(true);
-        await loadScoreHistory(user.id);
-        setProfileLoading(false);
+        setProfileHistoryDifficulty(difficulty);
+        await loadScoreHistory(user.id, difficulty);
       };
 
       const handleUpdateProfile = async (e) => {
@@ -1431,7 +1438,9 @@
           p_difficulty: diff,
           p_best_streak: bestStreak,
         });
-        if (profileOpen) loadScoreHistory(user.id);
+        if (profileOpen && diff === profileHistoryDifficulty) {
+          loadScoreHistory(user.id, diff);
+        }
       };
 
       const fetchLeaderboard = async (diff) => {
@@ -2251,14 +2260,37 @@
                 )}
 
                 <div className="pt-2 border-t border-slate-700">
-                  <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
                     <Trophy size={16} className="text-amber-400" />
                     {t.highScoreHistory}
                   </h3>
+                  <div className="overflow-x-auto -mx-1 px-1 mb-3">
+                    <div className="flex gap-1">
+                      {DIFFICULTIES.map(diff => (
+                        <button
+                          key={diff}
+                          type="button"
+                          onClick={() => {
+                            setProfileHistoryDifficulty(diff);
+                            loadScoreHistory(user.id, diff);
+                          }}
+                          title={t.difficulties[diff]}
+                          className={`rounded-lg px-2 py-1.5 transition-colors shrink-0 ${
+                            profileHistoryDifficulty === diff
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          }`}
+                        >
+                          <DifficultyStars diff={diff} size={9} selected={profileHistoryDifficulty === diff} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-3">{t.difficulties[profileHistoryDifficulty]}</p>
                   {profileLoading ? (
                     <p className="text-slate-400 text-sm text-center py-6">{t.loading}</p>
                   ) : (
-                    <HighScoreChart data={scoreHistory} lang={lang} t={t} difficulties={t.difficulties} />
+                    <HighScoreChart data={scoreHistory} lang={lang} t={t} />
                   )}
                 </div>
               </div>
