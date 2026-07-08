@@ -196,6 +196,8 @@
         player: 'Player',
         streak: 'Streak',
         you: 'You',
+        yourPosition: 'Your position',
+        notRanked: 'Not ranked yet — play to appear on the leaderboard',
         noScores: 'No scores yet. Be the first!',
         account: 'Account',
         createAccount: 'Create account',
@@ -344,6 +346,8 @@
         player: 'Giocatore',
         streak: 'Streak',
         you: 'Tu',
+        yourPosition: 'La tua posizione',
+        notRanked: 'Non sei in classifica — gioca per comparire',
         noScores: 'Nessun punteggio. Sii il primo!',
         account: 'Account',
         createAccount: 'Crea account',
@@ -492,6 +496,8 @@
         player: 'Joueur',
         streak: 'Série',
         you: 'Vous',
+        yourPosition: 'Votre position',
+        notRanked: 'Pas encore classé — jouez pour apparaître',
         noScores: 'Aucun score. Soyez le premier !',
         account: 'Compte',
         createAccount: 'Créer un compte',
@@ -640,6 +646,8 @@
         player: 'Jugador',
         streak: 'Racha',
         you: 'Tú',
+        yourPosition: 'Tu posición',
+        notRanked: 'Sin clasificar — juega para aparecer',
         noScores: 'Sin puntuaciones. ¡Sé el primero!',
         account: 'Cuenta',
         createAccount: 'Crear cuenta',
@@ -788,6 +796,8 @@
         player: 'Spieler',
         streak: 'Serie',
         you: 'Du',
+        yourPosition: 'Deine Position',
+        notRanked: 'Noch nicht platziert — spiele, um aufzutauchen',
         noScores: 'Noch keine Einträge. Sei der Erste!',
         account: 'Konto',
         createAccount: 'Konto erstellen',
@@ -1320,6 +1330,7 @@
       const [leaderboardOpen, setLeaderboardOpen] = useState(false);
       const [leaderboardDifficulty, setLeaderboardDifficulty] = useState('beginner');
       const [leaderboardData, setLeaderboardData] = useState([]);
+      const [leaderboardUserPosition, setLeaderboardUserPosition] = useState(null);
       const [leaderboardLoading, setLeaderboardLoading] = useState(false);
       const [profileOpen, setProfileOpen] = useState(false);
       const [profileHistoryDifficulty, setProfileHistoryDifficulty] = useState('beginner');
@@ -1341,7 +1352,7 @@
           .eq('user_id', userId)
           .eq('difficulty', diff)
           .order('achieved_at', { ascending: false })
-          .limit(20);
+          .limit(5);
         setScoreHistory(data || []);
         setProfileLoading(false);
       };
@@ -1446,13 +1457,23 @@
       const fetchLeaderboard = async (diff) => {
         if (!supabaseClient) return;
         setLeaderboardLoading(true);
-        const { data } = await supabaseClient
+        const boardPromise = supabaseClient
           .from('leaderboard_ranked')
           .select('rank, username, best_streak, user_id')
           .eq('difficulty', diff)
           .order('rank', { ascending: true })
           .limit(25);
-        setLeaderboardData(data || []);
+        const userPromise = user
+          ? supabaseClient
+              .from('leaderboard_ranked')
+              .select('rank, best_streak')
+              .eq('difficulty', diff)
+              .eq('user_id', user.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null });
+        const [{ data: boardData }, { data: userData }] = await Promise.all([boardPromise, userPromise]);
+        setLeaderboardData(boardData || []);
+        setLeaderboardUserPosition(userData || null);
         setLeaderboardLoading(false);
       };
 
@@ -1616,7 +1637,11 @@
         }
       };
 
-      const playTone = (frequency, duration = 2.5, volume = 0.5, startTimeOffset = 0) => {
+      const NOTE_DURATION = 2.4;
+
+      const getChordNoteVolume = (noteCount) => 0.34 / Math.sqrt(Math.max(1, noteCount));
+
+      const playTone = (frequency, duration = NOTE_DURATION, volume = 0.5, startTimeOffset = 0) => {
         if (!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
         const t0 = ctx.currentTime + startTimeOffset;
@@ -1666,14 +1691,14 @@
       };
 
       const playTargetNotes = (notes) => {
-        const chordVol = 0.34 / Math.sqrt(notes.length);
+        const chordVol = getChordNoteVolume(notes.length);
         if (isIntervalArpeggio(difficulty) || isChordArpeggio(difficulty)) {
           notes.forEach((noteId, i) => {
-            playTone(FREQUENCIES[noteId], 2.4, chordVol, i * 0.55);
+            playTone(FREQUENCIES[noteId], NOTE_DURATION, chordVol, i * 0.55);
           });
         } else {
           notes.forEach(noteId => {
-            playTone(FREQUENCIES[noteId], 2.4, chordVol);
+            playTone(FREQUENCIES[noteId], NOTE_DURATION, chordVol);
           });
         }
       };
@@ -1693,11 +1718,10 @@
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
-        const userVol = 0.34 / Math.sqrt(Math.max(1, selectedNotes.filter(n => n !== null).length));
-        selectedNotes.forEach(noteId => {
-          if (noteId) {
-            playTone(FREQUENCIES[noteId], 2.4, userVol);
-          }
+        const filledNotes = selectedNotes.filter(n => n !== null);
+        const userVol = getChordNoteVolume(filledNotes.length);
+        filledNotes.forEach(noteId => {
+          playTone(FREQUENCIES[noteId], NOTE_DURATION, userVol);
         });
       };
 
@@ -1706,13 +1730,12 @@
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
-        const userVol = 0.34 / Math.sqrt(Math.max(1, selectedNotes.filter(n => n !== null).length));
+        const filledNotes = selectedNotes.filter(n => n !== null);
+        const userVol = getChordNoteVolume(filledNotes.length);
         let delayIndex = 0;
-        selectedNotes.forEach(noteId => {
-          if (noteId) {
-            playTone(FREQUENCIES[noteId], 2.4, userVol, delayIndex * 0.5);
-            delayIndex++;
-          }
+        filledNotes.forEach(noteId => {
+          playTone(FREQUENCIES[noteId], NOTE_DURATION, userVol, delayIndex * 0.55);
+          delayIndex++;
         });
       };
 
@@ -1786,7 +1809,8 @@
         if (gameState !== 'playing' || activeBoxIndex === null) return;
         
         initAudio();
-        playTone(FREQUENCIES[noteId], 0.7, 0.38);
+        const noteCount = currentChord?.notes?.length || selectedNotes.length || 1;
+        playTone(FREQUENCIES[noteId], NOTE_DURATION, getChordNoteVolume(noteCount));
         setErrorStatus(false);
         
         setSelectedNotes(prev => {
@@ -2150,6 +2174,21 @@
                 <p className="text-xs text-slate-400 mt-2">{t.difficulties[leaderboardDifficulty]} — {t.topPlayers}</p>
               </div>
               <div className="overflow-y-auto flex-1 p-3">
+                {user && !leaderboardLoading && (
+                  <div className="mb-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 px-3 py-2.5 flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-indigo-200">{t.yourPosition}</span>
+                    {leaderboardUserPosition ? (
+                      <span className="text-sm font-bold text-amber-400">
+                        #{leaderboardUserPosition.rank}
+                        <span className="text-slate-300 font-medium mx-2">·</span>
+                        {leaderboardUserPosition.best_streak}
+                        <Star size={12} className="inline fill-amber-400 text-amber-400 ml-0.5" />
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 text-right">{t.notRanked}</span>
+                    )}
+                  </div>
+                )}
                 {leaderboardLoading ? (
                   <p className="text-center text-slate-400 py-8">{t.loading}</p>
                 ) : leaderboardData.length === 0 ? (
