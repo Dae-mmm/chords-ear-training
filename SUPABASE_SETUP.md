@@ -54,7 +54,7 @@ window.SUPABASE_CONFIG = {
 
 Make sure `supabase-config.js` is deployed alongside `index.html` (same folder).
 
-Run `supabase/migration_profile.sql` if you already applied the initial schema (adds score history, username login).
+Run `supabase/migration_login_only.sql` (username login) or the full `supabase/migration_profile.sql` if you already applied the initial schema.
 
 ## Features
 

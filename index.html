@@ -216,6 +216,9 @@
         profileUpdated: 'Profile updated',
         passwordUpdated: 'Password updated',
         invalidCredentials: 'Invalid username or password',
+        loginIdentifier: 'Username or email',
+        loginUseEmail: 'Username login not ready — enter your email address in this field',
+        emailNotConfirmed: 'Please confirm your email before signing in',
         usernameTaken: 'Username already taken',
         passwordsMismatch: 'Passwords do not match',
         starsTitle: 'Star system',
@@ -361,6 +364,9 @@
         profileUpdated: 'Profilo aggiornato',
         passwordUpdated: 'Password aggiornata',
         invalidCredentials: 'Username o password non validi',
+        loginIdentifier: 'Username o email',
+        loginUseEmail: 'Login con username non attivo — inserisci la tua email in questo campo',
+        emailNotConfirmed: 'Conferma la email prima di accedere',
         usernameTaken: 'Username già in uso',
         passwordsMismatch: 'Le password non coincidono',
         starsTitle: 'Sistema stelle',
@@ -506,6 +512,9 @@
         profileUpdated: 'Profil mis à jour',
         passwordUpdated: 'Mot de passe mis à jour',
         invalidCredentials: "Nom d'utilisateur ou mot de passe invalide",
+        loginIdentifier: "Nom d'utilisateur ou e-mail",
+        loginUseEmail: "Connexion par pseudo indisponible — utilisez votre e-mail dans ce champ",
+        emailNotConfirmed: "Confirmez votre e-mail avant de vous connecter",
         usernameTaken: "Nom d'utilisateur déjà pris",
         passwordsMismatch: 'Les mots de passe ne correspondent pas',
         starsTitle: 'Système d\'étoiles',
@@ -651,6 +660,9 @@
         profileUpdated: 'Perfil actualizado',
         passwordUpdated: 'Contraseña actualizada',
         invalidCredentials: 'Usuario o contraseña inválidos',
+        loginIdentifier: 'Usuario o correo',
+        loginUseEmail: 'Login por usuario no disponible — introduce tu correo en este campo',
+        emailNotConfirmed: 'Confirma tu correo antes de iniciar sesión',
         usernameTaken: 'Usuario ya en uso',
         passwordsMismatch: 'Las contraseñas no coinciden',
         starsTitle: 'Sistema de estrellas',
@@ -796,6 +808,9 @@
         profileUpdated: 'Profil aktualisiert',
         passwordUpdated: 'Passwort aktualisiert',
         invalidCredentials: 'Ungültiger Benutzername oder Passwort',
+        loginIdentifier: 'Benutzername oder E-Mail',
+        loginUseEmail: 'Benutzername-Login nicht aktiv — gib deine E-Mail in dieses Feld ein',
+        emailNotConfirmed: 'Bitte bestätige zuerst deine E-Mail',
         usernameTaken: 'Benutzername bereits vergeben',
         passwordsMismatch: 'Passwörter stimmen nicht überein',
         starsTitle: 'Sternesystem',
@@ -1438,25 +1453,53 @@
         fetchLeaderboard(diff);
       };
 
+      const resolveLoginEmail = async (identifier) => {
+        const trimmed = identifier.trim();
+        if (trimmed.includes('@')) return { email: trimmed };
+
+        const { data, error } = await supabaseClient.rpc('get_email_for_username', {
+          p_username: trimmed,
+        });
+
+        if (error) {
+          if (error.code === 'PGRST202') return { error: 'db_setup' };
+          return { error: 'lookup' };
+        }
+        if (!data) return { error: 'not_found' };
+        return { email: data };
+      };
+
       const handleSignIn = async (e) => {
         e.preventDefault();
         if (!supabaseClient) return;
         setAuthLoading(true);
         setAuthError('');
-        const { data: email, error: lookupError } = await supabaseClient.rpc('get_email_for_username', {
-          p_username: authUsername.trim(),
-        });
-        if (lookupError || !email) {
+
+        const resolved = await resolveLoginEmail(authUsername);
+        if (resolved.error === 'db_setup') {
+          setAuthError(t.loginUseEmail);
+          setAuthLoading(false);
+          return;
+        }
+        if (resolved.error || !resolved.email) {
           setAuthError(t.invalidCredentials);
           setAuthLoading(false);
           return;
         }
+
         const { error } = await supabaseClient.auth.signInWithPassword({
-          email,
+          email: resolved.email,
           password: authPassword,
         });
-        if (error) setAuthError(t.invalidCredentials);
-        else {
+
+        if (error) {
+          const msg = (error.message || '').toLowerCase();
+          if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+            setAuthError(t.emailNotConfirmed);
+          } else {
+            setAuthError(t.invalidCredentials);
+          }
+        } else {
           setAuthOpen(false);
           setAuthPassword('');
         }
@@ -2005,13 +2048,15 @@
               </div>
               <form onSubmit={authMode === 'login' ? handleSignIn : handleSignUp} className="space-y-3">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">{t.username}</label>
+                  <label className="block text-xs text-slate-400 mb-1">
+                    {authMode === 'login' ? t.loginIdentifier : t.username}
+                  </label>
                   <input
                     type="text"
                     value={authUsername}
                     onChange={e => setAuthUsername(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                    pattern="[a-zA-Z0-9_]{2,24}"
+                    pattern={authMode === 'login' ? undefined : '[a-zA-Z0-9_]{2,24}'}
                     autoComplete="username"
                     required
                   />
