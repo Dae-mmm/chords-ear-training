@@ -1,12 +1,70 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ear Training Accordi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Ear Training Chords</title>
   
   <!-- Tailwind CSS (Caricato via CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html.fullscreen-active, html.fullscreen-active body {
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+
+    .piano-keys {
+      color-scheme: only light;
+      forced-color-adjust: none;
+    }
+
+    .piano-key {
+      -webkit-tap-highlight-color: transparent;
+      appearance: none;
+      -webkit-appearance: none;
+      color-scheme: only light;
+      forced-color-adjust: none;
+      background-image: none;
+      box-shadow: none;
+    }
+
+    .piano-key--white {
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #64748b !important;
+    }
+
+    .piano-key--white.piano-key--selected {
+      background: #c7d2fe !important;
+      background-color: #c7d2fe !important;
+    }
+
+    .piano-key--white:active {
+      background: #e2e8f0 !important;
+      background-color: #e2e8f0 !important;
+    }
+
+    .piano-key--black {
+      background: #1e293b !important;
+      background-color: #1e293b !important;
+      border-color: #020617 !important;
+      color: #94a3b8 !important;
+    }
+
+    .piano-key--black.piano-key--selected {
+      background: #4f46e5 !important;
+      background-color: #4f46e5 !important;
+      color: #e0e7ff !important;
+    }
+
+    .piano-key--black:active {
+      background: #334155 !important;
+      background-color: #334155 !important;
+    }
+  </style>
   
   <!-- React & ReactDOM (Caricati via CDN) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -21,7 +79,644 @@
 
   <!-- Inizio codice dell'Applicazione -->
   <script type="text/babel">
-    const { useState, useRef } = React;
+    const { useState, useRef, useEffect } = React;
+
+    // --- INTERNATIONALIZATION ---
+    const LANGUAGES = [
+      { code: 'en', label: 'EN' },
+      { code: 'it', label: 'IT' },
+      { code: 'fr', label: 'FR' },
+      { code: 'es', label: 'ES' },
+      { code: 'de', label: 'DE' }
+    ];
+    const DEFAULT_LANG = 'en';
+    const DIFFICULTIES = ['beginner', 'intermediate', 'intermediate_plus', 'advanced', 'advanced_plus', 'pro', 'jazz'];
+
+    const isIntervalLevel = (d) => d === 'intermediate' || d === 'intermediate_plus';
+    const isIntervalArpeggio = (d) => d === 'intermediate';
+    const isChordDictionaryLevel = (d) => d === 'advanced' || d === 'advanced_plus' || d === 'pro' || d === 'jazz';
+    const isChordArpeggio = (d) => d === 'advanced';
+    const getChordCategoryKey = (d) => (d === 'advanced_plus' ? 'advanced' : d);
+    const usesTargetListenPenalty = (d) => d === 'beginner' || isIntervalLevel(d);
+
+    const NOTE_NAMES = {
+      en: { C: 'C', Db: 'C#', D: 'D', Eb: 'Eb', E: 'E', F: 'F', Gb: 'F#', G: 'G', Ab: 'Ab', A: 'A', Bb: 'Bb', B: 'B' },
+      it: { C: 'Do', Db: 'Do#', D: 'Re', Eb: 'Mib', E: 'Mi', F: 'Fa', Gb: 'Fa#', G: 'Sol', Ab: 'Sol#', A: 'La', Bb: 'Sib', B: 'Si' },
+      fr: { C: 'Do', Db: 'Do#', D: 'Ré', Eb: 'Mib', E: 'Mi', F: 'Fa', Gb: 'Fa#', G: 'Sol', Ab: 'Sol#', A: 'La', Bb: 'Sib', B: 'Si' },
+      es: { C: 'Do', Db: 'Do#', D: 'Re', Eb: 'Mib', E: 'Mi', F: 'Fa', Gb: 'Fa#', G: 'Sol', Ab: 'Sol#', A: 'La', Bb: 'Sib', B: 'Si' },
+      de: { C: 'C', Db: 'Des', D: 'D', Eb: 'Es', E: 'E', F: 'F', Gb: 'Ges', G: 'G', Ab: 'As', A: 'A', Bb: 'B', B: 'H' }
+    };
+
+    const INTERVAL_NAMES = {
+      en: ['Unison', 'Minor 2nd', 'Major 2nd', 'Minor 3rd', 'Major 3rd', 'Perfect 4th', 'Tritone', 'Perfect 5th', 'Minor 6th', 'Major 6th', 'Minor 7th', 'Major 7th', 'Octave'],
+      it: ['Unisono', 'Seconda Minore', 'Seconda Maggiore', 'Terza Minore', 'Terza Maggiore', 'Quarta Giusta', 'Tritono', 'Quinta Giusta', 'Sesta Minore', 'Sesta Maggiore', 'Settima Minore', 'Settima Maggiore', 'Ottava Giusta'],
+      fr: ['Unisson', 'Seconde mineure', 'Seconde majeure', 'Tierce mineure', 'Tierce majeure', 'Quarte juste', 'Triton', 'Quinte juste', 'Sixte mineure', 'Sixte majeure', 'Septième mineure', 'Septième majeure', 'Octave'],
+      es: ['Unísono', 'Segunda menor', 'Segunda mayor', 'Tercera menor', 'Tercera mayor', 'Cuarta justa', 'Tritono', 'Quinta justa', 'Sexta menor', 'Sexta mayor', 'Séptima menor', 'Séptima mayor', 'Octava'],
+      de: ['Prime', 'Kleine Sekunde', 'Große Sekunde', 'Kleine Terz', 'Große Terz', 'Reine Quarte', 'Tritonus', 'Reine Quinte', 'Kleine Sexte', 'Große Sexte', 'Kleine Septime', 'Große Septime', 'Oktave']
+    };
+
+    const CHORD_TYPES = {
+      major: { en: 'Major', it: 'Maggiore', fr: 'Majeur', es: 'Mayor', de: 'Dur', dePrefix: true },
+      minor: { en: 'Minor', it: 'Minore', fr: 'Mineur', es: 'Menor', de: 'moll', dePrefix: true },
+      sus4: { en: 'sus4', it: 'sus4', fr: 'sus4', es: 'sus4', de: 'sus4' },
+      sus2: { en: 'sus2', it: 'sus2', fr: 'sus2', es: 'sus2', de: 'sus2' },
+      augmented: { en: 'Augmented', it: 'Aumentato', fr: 'Augmenté', es: 'Aumentado', de: 'überm.' },
+      diminished: { en: 'Diminished', it: 'Diminuito', fr: 'Diminué', es: 'Disminuido', de: 'verm.' }
+    };
+
+    const TRANSLATIONS = {
+      en: {
+        title: 'Ear Training Chords',
+        appName: 'Ear Training',
+        level: 'Level',
+        startGame: 'Start Game',
+        next: 'Next',
+        submit: 'Submit Answer',
+        guess: 'Guess',
+        replay: 'Replay',
+        harmonic: 'Harmonic',
+        melodic: 'Melodic',
+        chord: 'Chord',
+        arpeggio: 'Arpeggio',
+        starsAtStake: 'Stars at stake:',
+        minusOneStar: '-1 Star!',
+        exact: 'Correct! It was',
+        earnedStars: 'You earned +{n}',
+        noStars: 'No stars earned, better luck next time!',
+        sec: 'sec',
+        theNote: 'The Note to',
+        theInterval: 'The Interval to',
+        theChord: 'Chord to',
+        findNote: 'Find the note',
+        completeInterval: 'Complete the interval',
+        composeChord: 'Compose the chord',
+        currentStreak: 'Current Streak (Stars)',
+        bestStreak: 'Best Streak (Stars)',
+        keyboardScroll: 'Keyboard (Scroll to explore)',
+        scrollLeft: 'Scroll left',
+        scrollRight: 'Scroll right',
+        playTogether: 'Play all notes together',
+        playOneByOne: 'Play notes one by one',
+        fullscreen: 'Fullscreen',
+        exitFullscreen: 'Exit fullscreen',
+        rotateDevice: 'Rotate your phone to landscape to continue, or exit fullscreen mode',
+        language: 'Language',
+        starsTitle: 'Star system',
+        starRules: {
+          beginner: [
+            '3 stars: under 2 seconds',
+            '2 stars: up to 5 seconds',
+            '1 star: correct answer (slower)',
+            'Each replay of the target note: −1 star',
+            'Wrong answer: −1 star',
+          ],
+          intermediate: [
+            '3 stars: within 5 seconds',
+            '2 stars: within 10 seconds',
+            '1 star: correct answer (slower)',
+            'Each replay of the target interval: −1 star',
+            'Wrong answer: −1 star',
+            'Interval played as arpeggio',
+          ],
+          intermediate_plus: [
+            '3 stars: within 5 seconds',
+            '2 stars: within 10 seconds',
+            '1 star: correct answer (slower)',
+            'Each replay of the target interval: −1 star',
+            'Wrong answer: −1 star',
+            'Interval played together (harmonic)',
+          ],
+          advanced: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+            'Chord played as arpeggio',
+          ],
+          advanced_plus: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+            'Chord played together (harmonic)',
+          ],
+          pro: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+          ],
+          jazz: [
+            '3 stars: no replays of your answer',
+            '2 stars: 1–2 replays',
+            '1 star: 3 or more replays',
+            'Wrong answer: −1 star',
+          ],
+        },
+        note: 'Note',
+        interval: 'Interval',
+        the: 'the',
+        a: 'a',
+        difficulties: {
+          beginner: 'Beginner',
+          intermediate: 'Intermediate',
+          intermediate_plus: 'Intermediate+',
+          advanced: 'Advanced',
+          advanced_plus: 'Advanced+',
+          pro: 'Pro',
+          jazz: 'Jazz'
+        },
+        descriptions: {
+          beginner: 'Train your relative and absolute ear by guessing a randomly generated single note.',
+          intermediate: 'Recognize the interval between two notes (arpeggio). The starting note is given to you!',
+          intermediate_plus: 'Recognize the interval between two notes played together. The starting note is given to you!',
+          advanced: 'Major and minor chords (3 notes), played as arpeggio. The foundations of harmony.',
+          advanced_plus: 'Major and minor chords (3 notes), played together. The foundations of harmony.',
+          pro: 'Suspended (sus), diminished and augmented chords (3 notes). Tension and resolution.',
+          jazz: 'Complex chords (sevenths, ninths, altered, etc.). For real musicians.'
+        }
+      },
+      it: {
+        title: 'Ear Training Accordi',
+        appName: 'Ear Training',
+        level: 'Livello',
+        startGame: 'Inizia il Gioco',
+        next: 'Prossimo',
+        submit: 'Invia Risposta',
+        guess: 'Indovinare',
+        replay: 'Riproduci',
+        harmonic: 'Armonico',
+        melodic: 'Melodico',
+        chord: 'Accordo',
+        arpeggio: 'Arpeggio',
+        starsAtStake: 'Stelle in palio:',
+        minusOneStar: '-1 Stella!',
+        exact: 'Esatto! Era',
+        earnedStars: 'Hai guadagnato +{n}',
+        noStars: 'Nessuna stella ottenuta, andrà meglio alla prossima!',
+        sec: 'sec',
+        theNote: 'La Nota da',
+        theInterval: "L'Intervallo da",
+        theChord: 'Accordo da',
+        findNote: 'Trova la nota',
+        completeInterval: "Completa l'intervallo",
+        composeChord: "Componi l'accordo",
+        currentStreak: 'Streak Attuale (in Stelle)',
+        bestStreak: 'Record Streak (in Stelle)',
+        keyboardScroll: 'Tastiera (Scorri per esplorare)',
+        scrollLeft: 'Scorri a sinistra',
+        scrollRight: 'Scorri a destra',
+        playTogether: 'Suona tutte le note insieme',
+        playOneByOne: 'Suona le note una per una',
+        fullscreen: 'Schermo intero',
+        exitFullscreen: 'Esci da schermo intero',
+        rotateDevice: 'Ruota il telefono in orizzontale per continuare, oppure esci dalla modalità schermo intero',
+        language: 'Lingua',
+        starsTitle: 'Sistema stelle',
+        starRules: {
+          beginner: [
+            '3 stelle: meno di 2 secondi',
+            '2 stelle: fino a 5 secondi',
+            '1 stella: risposta corretta (più lento)',
+            'Ogni riascolto della nota: −1 stella',
+            'Risposta sbagliata: −1 stella',
+          ],
+          intermediate: [
+            '3 stelle: entro 5 secondi',
+            '2 stelle: entro 10 secondi',
+            '1 stella: risposta corretta (più lento)',
+            "Ogni riascolto dell'intervallo: −1 stella",
+            'Risposta sbagliata: −1 stella',
+            'Intervallo in arpeggio',
+          ],
+          intermediate_plus: [
+            '3 stelle: entro 5 secondi',
+            '2 stelle: entro 10 secondi',
+            '1 stella: risposta corretta (più lento)',
+            "Ogni riascolto dell'intervallo: −1 stella",
+            'Risposta sbagliata: −1 stella',
+            'Intervallo suonato insieme (armonico)',
+          ],
+          advanced: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+            'Accordo in arpeggio',
+          ],
+          advanced_plus: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+            'Accordo suonato insieme (armonico)',
+          ],
+          pro: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+          ],
+          jazz: [
+            '3 stelle: nessun riascolto della tua risposta',
+            '2 stelle: 1–2 riascolti',
+            '1 stella: 3 o più riascolti',
+            'Risposta sbagliata: −1 stella',
+          ],
+        },
+        note: 'Nota',
+        interval: 'Intervallo',
+        the: 'il',
+        a: 'un',
+        difficulties: {
+          beginner: 'Principiante',
+          intermediate: 'Intermedio',
+          intermediate_plus: 'Intermedio+',
+          advanced: 'Avanzato',
+          advanced_plus: 'Avanzato+',
+          pro: 'Pro',
+          jazz: 'Jazz'
+        },
+        descriptions: {
+          beginner: "Allena l'orecchio relativo e assoluto indovinando una singola nota generata casualmente.",
+          intermediate: "Riconosci l'intervallo tra due note (arpeggio). Il sistema ti regala la nota di partenza!",
+          intermediate_plus: "Riconosci l'intervallo tra due note suonate insieme. Il sistema ti regala la nota di partenza!",
+          advanced: "Accordi maggiori e minori (3 note), in arpeggio. Le fondamenta dell'armonia.",
+          advanced_plus: "Accordi maggiori e minori (3 note), suonati insieme. Le fondamenta dell'armonia.",
+          pro: 'Accordi sospesi (sus), diminuiti e aumentati (3 note). Tensione e risoluzione.',
+          jazz: 'Accordi complessi (settime, none, alterati, ecc). Per veri musicisti.'
+        }
+      },
+      fr: {
+        title: 'Ear Training Accords',
+        appName: 'Ear Training',
+        level: 'Niveau',
+        startGame: 'Commencer',
+        next: 'Suivant',
+        submit: 'Valider',
+        guess: 'Deviner',
+        replay: 'Écouter',
+        harmonic: 'Harmonique',
+        melodic: 'Mélodique',
+        chord: 'Accord',
+        arpeggio: 'Arpège',
+        starsAtStake: 'Étoiles en jeu :',
+        minusOneStar: '-1 Étoile !',
+        exact: 'Exact ! C\'était',
+        earnedStars: 'Vous avez gagné +{n}',
+        noStars: 'Aucune étoile, ce sera mieux la prochaine fois !',
+        sec: 'sec',
+        theNote: 'La note à',
+        theInterval: "L'intervalle à",
+        theChord: 'Accord à',
+        findNote: 'Trouvez la note',
+        completeInterval: "Complétez l'intervalle",
+        composeChord: "Composez l'accord",
+        currentStreak: 'Série actuelle (étoiles)',
+        bestStreak: 'Record de série (étoiles)',
+        keyboardScroll: 'Clavier (Faites défiler pour explorer)',
+        scrollLeft: 'Défiler à gauche',
+        scrollRight: 'Défiler à droite',
+        playTogether: 'Jouer toutes les notes ensemble',
+        playOneByOne: 'Jouer les notes une par une',
+        fullscreen: 'Plein écran',
+        exitFullscreen: 'Quitter le plein écran',
+        rotateDevice: 'Tournez votre téléphone en mode paysage pour continuer, ou quittez le plein écran',
+        language: 'Langue',
+        starsTitle: 'Système d\'étoiles',
+        starRules: {
+          beginner: [
+            '3 étoiles : moins de 2 secondes',
+            '2 étoiles : jusqu\'à 5 secondes',
+            '1 étoile : bonne réponse (plus lent)',
+            'Chaque réécoute de la note : −1 étoile',
+            'Mauvaise réponse : −1 étoile',
+          ],
+          intermediate: [
+            '3 étoiles : en 5 secondes',
+            '2 étoiles : en 10 secondes',
+            '1 étoile : bonne réponse (plus lent)',
+            'Chaque réécoute de l\'intervalle : −1 étoile',
+            'Mauvaise réponse : −1 étoile',
+            'Intervalle en arpège',
+          ],
+          intermediate_plus: [
+            '3 étoiles : en 5 secondes',
+            '2 étoiles : en 10 secondes',
+            '1 étoile : bonne réponse (plus lent)',
+            'Chaque réécoute de l\'intervalle : −1 étoile',
+            'Mauvaise réponse : −1 étoile',
+            'Intervalle joué ensemble (harmonique)',
+          ],
+          advanced: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+            'Accord en arpège',
+          ],
+          advanced_plus: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+            'Accord joué ensemble (harmonique)',
+          ],
+          pro: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+          ],
+          jazz: [
+            '3 étoiles : aucune réécoute de votre réponse',
+            '2 étoiles : 1–2 réécoutes',
+            '1 étoile : 3 réécoutes ou plus',
+            'Mauvaise réponse : −1 étoile',
+          ],
+        },
+        note: 'Note',
+        interval: 'Intervalle',
+        the: 'la',
+        a: 'un',
+        difficulties: {
+          beginner: 'Débutant',
+          intermediate: 'Intermédiaire',
+          intermediate_plus: 'Intermédiaire+',
+          advanced: 'Avancé',
+          advanced_plus: 'Avancé+',
+          pro: 'Pro',
+          jazz: 'Jazz'
+        },
+        descriptions: {
+          beginner: 'Entraînez votre oreille relative et absolue en devinant une note générée aléatoirement.',
+          intermediate: 'Reconnaissez l\'intervalle entre deux notes (arpège). La note de départ vous est offerte !',
+          intermediate_plus: 'Reconnaissez l\'intervalle entre deux notes jouées ensemble. La note de départ vous est offerte !',
+          advanced: 'Accords majeurs et mineurs (3 notes), en arpège. Les fondements de l\'harmonie.',
+          advanced_plus: 'Accords majeurs et mineurs (3 notes), joués ensemble. Les fondements de l\'harmonie.',
+          pro: 'Accords suspendus (sus), diminués et augmentés (3 notes). Tension et résolution.',
+          jazz: 'Accords complexes (septièmes, neuvièmes, altérés, etc.). Pour les vrais musiciens.'
+        }
+      },
+      es: {
+        title: 'Ear Training Acordes',
+        appName: 'Ear Training',
+        level: 'Nivel',
+        startGame: 'Empezar',
+        next: 'Siguiente',
+        submit: 'Enviar respuesta',
+        guess: 'Adivinar',
+        replay: 'Reproducir',
+        harmonic: 'Armónico',
+        melodic: 'Melódico',
+        chord: 'Acorde',
+        arpeggio: 'Arpegio',
+        starsAtStake: 'Estrellas en juego:',
+        minusOneStar: '¡-1 Estrella!',
+        exact: '¡Exacto! Era',
+        earnedStars: 'Has ganado +{n}',
+        noStars: 'Sin estrellas, ¡mejor suerte la próxima vez!',
+        sec: 'seg',
+        theNote: 'La nota a',
+        theInterval: 'El intervalo a',
+        theChord: 'Acorde a',
+        findNote: 'Encuentra la nota',
+        completeInterval: 'Completa el intervalo',
+        composeChord: 'Compón el acorde',
+        currentStreak: 'Racha actual (estrellas)',
+        bestStreak: 'Mejor racha (estrellas)',
+        keyboardScroll: 'Teclado (Desplázate para explorar)',
+        scrollLeft: 'Desplazar a la izquierda',
+        scrollRight: 'Desplazar a la derecha',
+        playTogether: 'Tocar todas las notas juntas',
+        playOneByOne: 'Tocar las notas una por una',
+        fullscreen: 'Pantalla completa',
+        exitFullscreen: 'Salir de pantalla completa',
+        rotateDevice: 'Gira el teléfono en horizontal para continuar, o sal de la pantalla completa',
+        language: 'Idioma',
+        starsTitle: 'Sistema de estrellas',
+        starRules: {
+          beginner: [
+            '3 estrellas: menos de 2 segundos',
+            '2 estrellas: hasta 5 segundos',
+            '1 estrella: respuesta correcta (más lento)',
+            'Cada repetición de la nota: −1 estrella',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+          intermediate: [
+            '3 estrellas: en 5 segundos',
+            '2 estrellas: en 10 segundos',
+            '1 estrella: respuesta correcta (más lento)',
+            'Cada repetición del intervalo: −1 estrella',
+            'Respuesta incorrecta: −1 estrella',
+            'Intervalo en arpegio',
+          ],
+          intermediate_plus: [
+            '3 estrellas: en 5 segundos',
+            '2 estrellas: en 10 segundos',
+            '1 estrella: respuesta correcta (más lento)',
+            'Cada repetición del intervalo: −1 estrella',
+            'Respuesta incorrecta: −1 estrella',
+            'Intervalo tocado junto (armónico)',
+          ],
+          advanced: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+            'Acorde en arpegio',
+          ],
+          advanced_plus: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+            'Acorde tocado junto (armónico)',
+          ],
+          pro: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+          jazz: [
+            '3 estrellas: sin repetir tu respuesta',
+            '2 estrellas: 1–2 repeticiones',
+            '1 estrella: 3 o más repeticiones',
+            'Respuesta incorrecta: −1 estrella',
+          ],
+        },
+        note: 'Nota',
+        interval: 'Intervalo',
+        the: 'la',
+        a: 'un',
+        difficulties: {
+          beginner: 'Principiante',
+          intermediate: 'Intermedio',
+          intermediate_plus: 'Intermedio+',
+          advanced: 'Avanzado',
+          advanced_plus: 'Avanzado+',
+          pro: 'Pro',
+          jazz: 'Jazz'
+        },
+        descriptions: {
+          beginner: 'Entrena tu oído relativo y absoluto adivinando una nota generada al azar.',
+          intermediate: 'Reconoce el intervalo entre dos notas (arpegio). ¡La nota inicial te la regalamos!',
+          intermediate_plus: 'Reconoce el intervalo entre dos notas tocadas juntas. ¡La nota inicial te la regalamos!',
+          advanced: 'Acordes mayores y menores (3 notas), en arpegio. Los fundamentos de la armonía.',
+          advanced_plus: 'Acordes mayores y menores (3 notas), tocados juntos. Los fundamentos de la armonía.',
+          pro: 'Acordes suspendidos (sus), disminuidos y aumentados (3 notas). Tensión y resolución.',
+          jazz: 'Acordes complejos (séptimas, novenas, alterados, etc.). Para músicos de verdad.'
+        }
+      },
+      de: {
+        title: 'Ear Training Akkorde',
+        appName: 'Ear Training',
+        level: 'Stufe',
+        startGame: 'Spiel starten',
+        next: 'Weiter',
+        submit: 'Antwort senden',
+        guess: 'Erraten',
+        replay: 'Abspielen',
+        harmonic: 'Harmonisch',
+        melodic: 'Melodisch',
+        chord: 'Akkord',
+        arpeggio: 'Arpeggio',
+        starsAtStake: 'Sterne zu gewinnen:',
+        minusOneStar: '-1 Stern!',
+        exact: 'Richtig! Es war',
+        earnedStars: 'Du hast +{n} verdient',
+        noStars: 'Keine Sterne, beim nächsten Mal klappt es!',
+        sec: 'Sek',
+        theNote: 'Die Note zum',
+        theInterval: 'Das Intervall zum',
+        theChord: 'Akkord zum',
+        findNote: 'Finde die Note',
+        completeInterval: 'Vervollständige das Intervall',
+        composeChord: 'Setze den Akkord',
+        currentStreak: 'Aktuelle Serie (Sterne)',
+        bestStreak: 'Rekord-Serie (Sterne)',
+        keyboardScroll: 'Tastatur (Scrollen zum Erkunden)',
+        scrollLeft: 'Nach links scrollen',
+        scrollRight: 'Nach rechts scrollen',
+        playTogether: 'Alle Noten zusammen spielen',
+        playOneByOne: 'Noten einzeln spielen',
+        fullscreen: 'Vollbild',
+        exitFullscreen: 'Vollbild beenden',
+        rotateDevice: 'Drehe dein Handy ins Querformat, um fortzufahren, oder beende den Vollbildmodus',
+        language: 'Sprache',
+        starsTitle: 'Sternesystem',
+        starRules: {
+          beginner: [
+            '3 Sterne: unter 2 Sekunden',
+            '2 Sterne: bis 5 Sekunden',
+            '1 Stern: richtige Antwort (langsamer)',
+            'Jedes Wiederholen der Note: −1 Stern',
+            'Falsche Antwort: −1 Stern',
+          ],
+          intermediate: [
+            '3 Sterne: innerhalb 5 Sekunden',
+            '2 Sterne: innerhalb 10 Sekunden',
+            '1 Stern: richtige Antwort (langsamer)',
+            'Jedes Wiederholen des Intervalls: −1 Stern',
+            'Falsche Antwort: −1 Stern',
+            'Intervall als Arpeggio',
+          ],
+          intermediate_plus: [
+            '3 Sterne: innerhalb 5 Sekunden',
+            '2 Sterne: innerhalb 10 Sekunden',
+            '1 Stern: richtige Antwort (langsamer)',
+            'Jedes Wiederholen des Intervalls: −1 Stern',
+            'Falsche Antwort: −1 Stern',
+            'Intervall zusammen gespielt (harmonisch)',
+          ],
+          advanced: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+            'Akkord als Arpeggio',
+          ],
+          advanced_plus: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+            'Akkord zusammen gespielt (harmonisch)',
+          ],
+          pro: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+          ],
+          jazz: [
+            '3 Sterne: keine Wiederholung deiner Antwort',
+            '2 Sterne: 1–2 Wiederholungen',
+            '1 Stern: 3 oder mehr Wiederholungen',
+            'Falsche Antwort: −1 Stern',
+          ],
+        },
+        note: 'Note',
+        interval: 'Intervall',
+        the: 'die',
+        a: 'ein',
+        difficulties: {
+          beginner: 'Anfänger',
+          intermediate: 'Mittel',
+          intermediate_plus: 'Mittel+',
+          advanced: 'Fortgeschritten',
+          advanced_plus: 'Fortgeschritten+',
+          pro: 'Pro',
+          jazz: 'Jazz'
+        },
+        descriptions: {
+          beginner: 'Trainiere dein relatives und absolutes Gehör, indem du eine zufällig generierte Note errätst.',
+          intermediate: 'Erkenne das Intervall zwischen zwei Noten (Arpeggio). Die Startnote bekommst du geschenkt!',
+          intermediate_plus: 'Erkenne das Intervall zwischen zwei zusammen gespielten Noten. Die Startnote bekommst du geschenkt!',
+          advanced: 'Dur- und Moll-Akkorde (3 Töne), als Arpeggio. Die Grundlagen der Harmonie.',
+          advanced_plus: 'Dur- und Moll-Akkorde (3 Töne), zusammen gespielt. Die Grundlagen der Harmonie.',
+          pro: 'Sus-, verminderte und übermäßige Akkorde (3 Töne). Spannung und Auflösung.',
+          jazz: 'Komplexe Akkorde (Septimen, Nonen, alteriert, etc.). Für echte Musiker.'
+        }
+      }
+    };
+
+    const getStoredLang = () => {
+      const stored = localStorage.getItem('earTrainingLang');
+      return LANGUAGES.some(l => l.code === stored) ? stored : DEFAULT_LANG;
+    };
+
+    const getNoteName = (pitch, lang) => NOTE_NAMES[lang]?.[pitch] || NOTE_NAMES.en[pitch] || pitch;
+
+    const formatChordName = (root, type, lang, symbol) => {
+      if (symbol) {
+        return `${getNoteName(root, lang)} ${symbol}`;
+      }
+      const chordType = CHORD_TYPES[type];
+      if (!chordType) return getNoteName(root, lang);
+      if (lang === 'de' && chordType.dePrefix) {
+        return `${getNoteName(root, lang)}-${chordType.de}`;
+      }
+      return `${getNoteName(root, lang)} ${chordType[lang]}`;
+    };
+
+    const getPianoKeys = (lang) => [
+      { id: 'C4', type: 'white', pitch: 'C' }, { id: 'Db4', type: 'black', pitch: 'Db' },
+      { id: 'D4', type: 'white', pitch: 'D' }, { id: 'Eb4', type: 'black', pitch: 'Eb' },
+      { id: 'E4', type: 'white', pitch: 'E' },
+      { id: 'F4', type: 'white', pitch: 'F' }, { id: 'Gb4', type: 'black', pitch: 'Gb' },
+      { id: 'G4', type: 'white', pitch: 'G' }, { id: 'Ab4', type: 'black', pitch: 'Ab' },
+      { id: 'A4', type: 'white', pitch: 'A' }, { id: 'Bb4', type: 'black', pitch: 'Bb' },
+      { id: 'B4', type: 'white', pitch: 'B' },
+      { id: 'C5', type: 'white', pitch: 'C' }, { id: 'Db5', type: 'black', pitch: 'Db' },
+      { id: 'D5', type: 'white', pitch: 'D' }, { id: 'Eb5', type: 'black', pitch: 'Eb' },
+      { id: 'E5', type: 'white', pitch: 'E' },
+      { id: 'F5', type: 'white', pitch: 'F' }, { id: 'Gb5', type: 'black', pitch: 'Gb' },
+      { id: 'G5', type: 'white', pitch: 'G' }, { id: 'Ab5', type: 'black', pitch: 'Ab' },
+      { id: 'A5', type: 'white', pitch: 'A' }, { id: 'Bb5', type: 'black', pitch: 'Bb' },
+      { id: 'B5', type: 'white', pitch: 'B' }
+    ].map(key => ({ ...key, label: getNoteName(key.pitch, lang) }));
 
     // --- COMPONENTI ICONE ---
     const Icon = ({ children, size = 24, className = '' }) => (
@@ -42,6 +737,10 @@
     // Nuove Icone per lo scorrimento
     const ChevronLeft = (props) => <Icon {...props}><polyline points="15 18 9 12 15 6" /></Icon>;
     const ChevronRight = (props) => <Icon {...props}><polyline points="9 18 15 12 9 6" /></Icon>;
+    const Maximize2 = (props) => <Icon {...props}><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></Icon>;
+    const Minimize2 = (props) => <Icon {...props}><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></Icon>;
+    const RotateCw = (props) => <Icon {...props}><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></Icon>;
+    const Smartphone = (props) => <Icon {...props}><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></Icon>;
 
     // Frequenze delle note per l'AudioContext
     const FREQUENCIES = {
@@ -49,99 +748,288 @@
       'C5': 523.25, 'Db5': 554.37, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25, 'F5': 698.46, 'Gb5': 739.99, 'G5': 783.99, 'Ab5': 830.61, 'A5': 880.00, 'Bb5': 932.33, 'B5': 987.77
     };
 
-    // Nomi degli intervalli per la generazione automatica (da 1 a 12 semitoni)
-    const INTERVAL_NAMES = [
-      "Unisono", "Seconda Minore", "Seconda Maggiore", "Terza Minore", "Terza Maggiore",
-      "Quarta Giusta", "Tritono", "Quinta Giusta", "Sesta Minore", "Sesta Maggiore",
-      "Settima Minore", "Settima Maggiore", "Ottava Giusta"
+    // Armonici approssimati di un pianoforte (serie naturale attenuata)
+    const PIANO_HARMONICS = [
+      { ratio: 1, gain: 1.0 },
+      { ratio: 2, gain: 0.42 },
+      { ratio: 3, gain: 0.18 },
+      { ratio: 4, gain: 0.1 },
+      { ratio: 5, gain: 0.06 },
+      { ratio: 6, gain: 0.03 },
     ];
 
-    // Layout della tastiera (2 ottave)
-    const PIANO_KEYS = [
-      { id: 'C4', type: 'white', label: 'Do' }, { id: 'Db4', type: 'black', label: 'Do#' },
-      { id: 'D4', type: 'white', label: 'Re' }, { id: 'Eb4', type: 'black', label: 'Re#' },
-      { id: 'E4', type: 'white', label: 'Mi' },
-      { id: 'F4', type: 'white', label: 'Fa' }, { id: 'Gb4', type: 'black', label: 'Fa#' },
-      { id: 'G4', type: 'white', label: 'Sol' }, { id: 'Ab4', type: 'black', label: 'Sol#' },
-      { id: 'A4', type: 'white', label: 'La' }, { id: 'Bb4', type: 'black', label: 'La#' },
-      { id: 'B4', type: 'white', label: 'Si' },
-      { id: 'C5', type: 'white', label: 'Do' }, { id: 'Db5', type: 'black', label: 'Do#' },
-      { id: 'D5', type: 'white', label: 'Re' }, { id: 'Eb5', type: 'black', label: 'Re#' },
-      { id: 'E5', type: 'white', label: 'Mi' },
-      { id: 'F5', type: 'white', label: 'Fa' }, { id: 'Gb5', type: 'black', label: 'Fa#' },
-      { id: 'G5', type: 'white', label: 'Sol' }, { id: 'Ab5', type: 'black', label: 'Sol#' },
-      { id: 'A5', type: 'white', label: 'La' }, { id: 'Bb5', type: 'black', label: 'La#' },
-      { id: 'B5', type: 'white', label: 'Si' }
-    ];
+    // Profilo timbrico: le note acute perdono armonici alti e brillantezza
+    const getNoteToneProfile = (frequency) => {
+      const trebleTame = Math.max(0.22, Math.min(1, 420 / frequency));
+      const volumeScale = Math.max(0.68, Math.min(1, 460 / frequency));
+      return {
+        trebleTame,
+        volumeScale,
+        brightFreq: Math.min(frequency * (1.8 + 2.2 * trebleTame), 1600 + 1800 * trebleTame),
+        darkFreq: Math.max(frequency * (1.05 + 0.25 * trebleTame), 140),
+        highShelfGain: frequency > 420 ? -2.5 - ((frequency - 420) / 90) : 0,
+        harmonicScale: (ratio) => (ratio === 1 ? 1 : Math.pow(trebleTame, (ratio - 1) * 0.9)),
+      };
+    };
 
-    // Catalogo degli accordi statici (Principiante e Intermedio ora sono generativi)
+    // Catalogo degli accordi statici (Principiante e Intermedio sono generativi)
     const CHORD_CATEGORIES = {
-      'Avanzato': [
-        { name: 'Do Maggiore', notes: ['C4', 'E4', 'G4'] }, { name: 'Sol Maggiore', notes: ['G4', 'B4', 'D5'] },
-        { name: 'Re Maggiore', notes: ['D4', 'Gb4', 'A4'] }, { name: 'La Maggiore', notes: ['A4', 'Db5', 'E5'] },
-        { name: 'Mi Maggiore', notes: ['E4', 'Ab4', 'B4'] }, { name: 'Fa Maggiore', notes: ['F4', 'A4', 'C5'] },
-        { name: 'Sib Maggiore', notes: ['Bb4', 'D5', 'F5'] }, { name: 'Mib Maggiore', notes: ['Eb4', 'G4', 'Bb4'] },
-        { name: 'Do# Maggiore', notes: ['Db4', 'F4', 'Ab4'] }, { name: 'Lab Maggiore', notes: ['Ab4', 'C5', 'Eb5'] },
-        { name: 'Si Maggiore', notes: ['B4', 'Eb5', 'Gb5'] }, { name: 'La Minore', notes: ['A4', 'C5', 'E5'] },
-        { name: 'Mi Minore', notes: ['E4', 'G4', 'B4'] }, { name: 'Si Minore', notes: ['B4', 'D5', 'Gb5'] },
-        { name: 'Fa# Minore', notes: ['Gb4', 'A4', 'Db5'] }, { name: 'Do# Minore', notes: ['Db4', 'E4', 'Ab4'] },
-        { name: 'Re Minore', notes: ['D4', 'F4', 'A4'] }, { name: 'Sol Minore', notes: ['G4', 'Bb4', 'D5'] },
-        { name: 'Do Minore', notes: ['C4', 'Eb4', 'G4'] }, { name: 'Sol# Minore', notes: ['Ab4', 'B4', 'Eb5'] },
-        { name: 'Sib Minore', notes: ['Bb4', 'Db5', 'F5'] }
+      advanced: [
+        { root: 'C', type: 'major', notes: ['C4', 'E4', 'G4'] }, { root: 'G', type: 'major', notes: ['G4', 'B4', 'D5'] },
+        { root: 'D', type: 'major', notes: ['D4', 'Gb4', 'A4'] }, { root: 'A', type: 'major', notes: ['A4', 'Db5', 'E5'] },
+        { root: 'E', type: 'major', notes: ['E4', 'Ab4', 'B4'] }, { root: 'F', type: 'major', notes: ['F4', 'A4', 'C5'] },
+        { root: 'Bb', type: 'major', notes: ['Bb4', 'D5', 'F5'] }, { root: 'Eb', type: 'major', notes: ['Eb4', 'G4', 'Bb4'] },
+        { root: 'Db', type: 'major', notes: ['Db4', 'F4', 'Ab4'] }, { root: 'Ab', type: 'major', notes: ['Ab4', 'C5', 'Eb5'] },
+        { root: 'B', type: 'major', notes: ['B4', 'Eb5', 'Gb5'] }, { root: 'A', type: 'minor', notes: ['A4', 'C5', 'E5'] },
+        { root: 'E', type: 'minor', notes: ['E4', 'G4', 'B4'] }, { root: 'B', type: 'minor', notes: ['B4', 'D5', 'Gb5'] },
+        { root: 'Gb', type: 'minor', notes: ['Gb4', 'A4', 'Db5'] }, { root: 'Db', type: 'minor', notes: ['Db4', 'E4', 'Ab4'] },
+        { root: 'D', type: 'minor', notes: ['D4', 'F4', 'A4'] }, { root: 'G', type: 'minor', notes: ['G4', 'Bb4', 'D5'] },
+        { root: 'C', type: 'minor', notes: ['C4', 'Eb4', 'G4'] }, { root: 'Ab', type: 'minor', notes: ['Ab4', 'B4', 'Eb5'] },
+        { root: 'Bb', type: 'minor', notes: ['Bb4', 'Db5', 'F5'] }
       ],
-      'Pro': [
-        { name: 'Do sus4', notes: ['C4', 'F4', 'G4'] }, { name: 'Re sus4', notes: ['D4', 'G4', 'A4'] },
-        { name: 'Mi sus4', notes: ['E4', 'A4', 'B4'] }, { name: 'Fa# sus4', notes: ['Gb4', 'B4', 'Db5'] },
-        { name: 'Sol sus4', notes: ['G4', 'C5', 'D5'] }, { name: 'La sus4', notes: ['A4', 'D5', 'E5'] },
-        { name: 'Si sus4', notes: ['B4', 'E5', 'Gb5'] }, { name: 'Do sus2', notes: ['C4', 'D4', 'G4'] },
-        { name: 'Re sus2', notes: ['D4', 'E4', 'A4'] }, { name: 'Fa sus2', notes: ['F4', 'G4', 'C5'] },
-        { name: 'Sol sus2', notes: ['G4', 'A4', 'D5'] }, { name: 'La sus2', notes: ['A4', 'B4', 'E5'] },
-        { name: 'Do Aumentato', notes: ['C4', 'E4', 'Ab4'] }, { name: 'Mib Aumentato', notes: ['Eb4', 'G4', 'B4'] },
-        { name: 'Fa Aumentato', notes: ['F4', 'A4', 'Db5'] }, { name: 'Sol Aumentato', notes: ['G4', 'B4', 'Eb5'] },
-        { name: 'La Aumentato', notes: ['A4', 'Db5', 'F5'] }, { name: 'Re Diminuito', notes: ['D4', 'F4', 'Ab4'] },
-        { name: 'Mi Diminuito', notes: ['E4', 'G4', 'Bb4'] }, { name: 'Fa# Diminuito', notes: ['Gb4', 'A4', 'C5'] },
-        { name: 'Sol# Diminuito', notes: ['Ab4', 'B4', 'D5'] }, { name: 'Si Diminuito', notes: ['B4', 'D5', 'F5'] }
+      pro: [
+        { root: 'C', type: 'sus4', notes: ['C4', 'F4', 'G4'] }, { root: 'D', type: 'sus4', notes: ['D4', 'G4', 'A4'] },
+        { root: 'E', type: 'sus4', notes: ['E4', 'A4', 'B4'] }, { root: 'Gb', type: 'sus4', notes: ['Gb4', 'B4', 'Db5'] },
+        { root: 'G', type: 'sus4', notes: ['G4', 'C5', 'D5'] }, { root: 'A', type: 'sus4', notes: ['A4', 'D5', 'E5'] },
+        { root: 'B', type: 'sus4', notes: ['B4', 'E5', 'Gb5'] }, { root: 'C', type: 'sus2', notes: ['C4', 'D4', 'G4'] },
+        { root: 'D', type: 'sus2', notes: ['D4', 'E4', 'A4'] }, { root: 'F', type: 'sus2', notes: ['F4', 'G4', 'C5'] },
+        { root: 'G', type: 'sus2', notes: ['G4', 'A4', 'D5'] }, { root: 'A', type: 'sus2', notes: ['A4', 'B4', 'E5'] },
+        { root: 'C', type: 'augmented', notes: ['C4', 'E4', 'Ab4'] }, { root: 'Eb', type: 'augmented', notes: ['Eb4', 'G4', 'B4'] },
+        { root: 'F', type: 'augmented', notes: ['F4', 'A4', 'Db5'] }, { root: 'G', type: 'augmented', notes: ['G4', 'B4', 'Eb5'] },
+        { root: 'A', type: 'augmented', notes: ['A4', 'Db5', 'F5'] }, { root: 'D', type: 'diminished', notes: ['D4', 'F4', 'Ab4'] },
+        { root: 'E', type: 'diminished', notes: ['E4', 'G4', 'Bb4'] }, { root: 'Gb', type: 'diminished', notes: ['Gb4', 'A4', 'C5'] },
+        { root: 'Ab', type: 'diminished', notes: ['Ab4', 'B4', 'D5'] }, { root: 'B', type: 'diminished', notes: ['B4', 'D5', 'F5'] }
       ],
-      'Jazz': [
-        { name: 'Do Maj7', notes: ['C4', 'E4', 'G4', 'B4'] }, { name: 'Fa Maj7', notes: ['F4', 'A4', 'C5', 'E5'] },
-        { name: 'Sol Dom7', notes: ['G4', 'B4', 'D5', 'F5'] }, { name: 'Re Min7', notes: ['D4', 'F4', 'A4', 'C5'] },
-        { name: 'Si Semidiminuito', notes: ['B4', 'D5', 'F5', 'A5'] }, { name: 'Do Maj9', notes: ['C4', 'E4', 'G4', 'B4', 'D5'] },
-        { name: 'Sol Min9', notes: ['G4', 'Bb4', 'D5', 'F5', 'A5'] }, { name: 'Sol 7b9', notes: ['G4', 'B4', 'D5', 'F5', 'Ab5'] },
-        { name: 'Do 6/9', notes: ['C4', 'E4', 'A4', 'D5'] }, { name: 'La Min11', notes: ['A4', 'C5', 'D5', 'E5', 'G5'] },
-        { name: 'Do Maj9#11', notes: ['C4', 'E4', 'G4', 'B4', 'D5', 'Gb5'] }, { name: 'Mi 7#9', notes: ['E4', 'Ab4', 'D5', 'G5'] },
-        { name: 'Sol 13', notes: ['G4', 'B4', 'D5', 'F5', 'E5'] }, { name: 'Do 7alt', notes: ['C4', 'E4', 'Ab4', 'Bb4', 'Eb5'] },
-        { name: 'Re 7b9b13', notes: ['D4', 'Gb4', 'C5', 'Eb5', 'Bb5'] }, { name: 'Fa m7b5', notes: ['F4', 'Ab4', 'B4', 'Eb5'] },
-        { name: 'La Maj7', notes: ['A4', 'Db5', 'E5', 'Ab5'] }, { name: 'Re Dom7', notes: ['D4', 'Gb4', 'A4', 'C5'] },
-        { name: 'Do Min7', notes: ['C4', 'Eb4', 'G4', 'Bb4'] }, { name: 'Mi Min11', notes: ['E4', 'G4', 'B4', 'D5', 'A5'] },
-        { name: 'Fa 7alt', notes: ['F4', 'A4', 'Db5', 'Eb5', 'Gb5'] }, { name: 'Do# m7b5', notes: ['Db4', 'E4', 'G4', 'B4'] },
-        { name: 'Fa Maj13', notes: ['F4', 'A4', 'C5', 'D5', 'E5', 'G5'] },
-        { name: 'Do 13', notes: ['C4', 'E4', 'G4', 'Bb4', 'D5', 'A5'] },
-        { name: 'Re Min11', notes: ['D4', 'F4', 'A4', 'C5', 'E5', 'G5'] },
-        { name: 'Sol 13b9', notes: ['G4', 'B4', 'D5', 'E5', 'F5', 'Ab5'] },
-        { name: 'Do Min11', notes: ['C4', 'Eb4', 'G4', 'Bb4', 'D5', 'F5'] },
-        { name: 'Mi 11', notes: ['E4', 'Ab4', 'B4', 'D5', 'Gb5', 'A5'] },
-        { name: 'Mib Maj9', notes: ['Eb4', 'G4', 'Bb4', 'D5', 'F5'] },
-        { name: 'Sib 13', notes: ['Bb4', 'C5', 'D5', 'F5', 'G5', 'Ab5'] },
-        { name: 'Fa# 7#9b13', notes: ['Gb4', 'Bb4', 'Db5', 'D5', 'E5', 'A5'] },
-        { name: 'La 7alt', notes: ['A4', 'C5', 'Db5', 'F5', 'G5'] }
+      jazz: [
+        { root: 'C', symbol: 'Maj7', notes: ['C4', 'E4', 'G4', 'B4'] }, { root: 'F', symbol: 'Maj7', notes: ['F4', 'A4', 'C5', 'E5'] },
+        { root: 'G', symbol: 'Dom7', notes: ['G4', 'B4', 'D5', 'F5'] }, { root: 'D', symbol: 'Min7', notes: ['D4', 'F4', 'A4', 'C5'] },
+        { root: 'B', symbol: 'Half-dim', notes: ['B4', 'D5', 'F5', 'A5'] }, { root: 'C', symbol: 'Maj9', notes: ['C4', 'E4', 'G4', 'B4', 'D5'] },
+        { root: 'G', symbol: 'Min9', notes: ['G4', 'Bb4', 'D5', 'F5', 'A5'] }, { root: 'G', symbol: '7b9', notes: ['G4', 'B4', 'D5', 'F5', 'Ab5'] },
+        { root: 'C', symbol: '6/9', notes: ['C4', 'E4', 'A4', 'D5'] }, { root: 'A', symbol: 'Min11', notes: ['A4', 'C5', 'D5', 'E5', 'G5'] },
+        { root: 'C', symbol: 'Maj9#11', notes: ['C4', 'E4', 'G4', 'B4', 'D5', 'Gb5'] }, { root: 'E', symbol: '7#9', notes: ['E4', 'Ab4', 'D5', 'G5'] },
+        { root: 'G', symbol: '13', notes: ['G4', 'B4', 'D5', 'F5', 'E5'] }, { root: 'C', symbol: '7alt', notes: ['C4', 'E4', 'Ab4', 'Bb4', 'Eb5'] },
+        { root: 'D', symbol: '7b9b13', notes: ['D4', 'Gb4', 'C5', 'Eb5', 'Bb5'] }, { root: 'F', symbol: 'm7b5', notes: ['F4', 'Ab4', 'B4', 'Eb5'] },
+        { root: 'A', symbol: 'Maj7', notes: ['A4', 'Db5', 'E5', 'Ab5'] }, { root: 'D', symbol: 'Dom7', notes: ['D4', 'Gb4', 'A4', 'C5'] },
+        { root: 'C', symbol: 'Min7', notes: ['C4', 'Eb4', 'G4', 'Bb4'] }, { root: 'E', symbol: 'Min11', notes: ['E4', 'G4', 'B4', 'D5', 'A5'] },
+        { root: 'F', symbol: '7alt', notes: ['F4', 'A4', 'Db5', 'Eb5', 'Gb5'] }, { root: 'Db', symbol: 'm7b5', notes: ['Db4', 'E4', 'G4', 'B4'] },
+        { root: 'F', symbol: 'Maj13', notes: ['F4', 'A4', 'C5', 'D5', 'E5', 'G5'] },
+        { root: 'C', symbol: '13', notes: ['C4', 'E4', 'G4', 'Bb4', 'D5', 'A5'] },
+        { root: 'D', symbol: 'Min11', notes: ['D4', 'F4', 'A4', 'C5', 'E5', 'G5'] },
+        { root: 'G', symbol: '13b9', notes: ['G4', 'B4', 'D5', 'E5', 'F5', 'Ab5'] },
+        { root: 'C', symbol: 'Min11', notes: ['C4', 'Eb4', 'G4', 'Bb4', 'D5', 'F5'] },
+        { root: 'E', symbol: '11', notes: ['E4', 'Ab4', 'B4', 'D5', 'Gb5', 'A5'] },
+        { root: 'Eb', symbol: 'Maj9', notes: ['Eb4', 'G4', 'Bb4', 'D5', 'F5'] },
+        { root: 'Bb', symbol: '13', notes: ['Bb4', 'C5', 'D5', 'F5', 'G5', 'Ab5'] },
+        { root: 'Gb', symbol: '7#9b13', notes: ['Gb4', 'Bb4', 'Db5', 'D5', 'E5', 'A5'] },
+        { root: 'A', symbol: '7alt', notes: ['A4', 'C5', 'Db5', 'F5', 'G5'] }
       ]
     };
 
+    const getChordDisplayName = (chord, lang) => {
+      if (chord.symbol) return formatChordName(chord.root, null, lang, chord.symbol);
+      return formatChordName(chord.root, chord.type, lang);
+    };
+
+    const getChordKey = (chord) => `${chord.root}-${chord.type || chord.symbol}-${chord.notes.join(',')}`;
+
+    const DIFFICULTY_STARS = {
+      beginner: { count: 1, plus: false },
+      intermediate: { count: 2, plus: false },
+      intermediate_plus: { count: 2, plus: true },
+      advanced: { count: 3, plus: false },
+      advanced_plus: { count: 3, plus: true },
+      pro: { count: 4, plus: false },
+      jazz: { count: 5, plus: false },
+    };
+
+    const DifficultyStars = ({ diff, size = 12, selected = false, className = '' }) => {
+      const { count, plus } = DIFFICULTY_STARS[diff] || { count: 1, plus: false };
+      const starClass = selected ? 'text-white fill-white' : 'text-amber-400 fill-amber-400';
+      const plusClass = selected ? 'text-white' : 'text-amber-400';
+      const gap = Math.max(1, Math.round(size * 0.06));
+
+      const renderStar = (key) => (
+        <Star key={key} size={size} className={`shrink-0 ${starClass}`} />
+      );
+
+      const renderLayout = () => {
+        if (count === 1) return renderStar(0);
+
+        if (count === 2) {
+          return (
+            <span className="inline-flex items-center" style={{ gap }}>
+              {renderStar(0)}
+              {renderStar(1)}
+            </span>
+          );
+        }
+
+        if (count === 3) {
+          return (
+            <span className="inline-grid grid-cols-2 justify-items-center" style={{ gap }}>
+              <span className="col-span-2 flex justify-center">{renderStar(0)}</span>
+              {renderStar(1)}
+              {renderStar(2)}
+            </span>
+          );
+        }
+
+        if (count === 4) {
+          return (
+            <span className="inline-grid grid-cols-2" style={{ gap }}>
+              {renderStar(0)}
+              {renderStar(1)}
+              {renderStar(2)}
+              {renderStar(3)}
+            </span>
+          );
+        }
+
+        return (
+          <span
+            className="inline-grid grid-cols-3 justify-items-center items-center"
+            style={{ gap, width: size * 2.6, height: size * 2.6 }}
+          >
+            {renderStar(0)}
+            <span />
+            {renderStar(1)}
+            <span />
+            {renderStar(2)}
+            <span />
+            {renderStar(3)}
+            <span />
+            {renderStar(4)}
+          </span>
+        );
+      };
+
+      return (
+        <span className={`inline-flex items-center leading-none ${className}`} style={{ gap: plus ? 2 : 0 }} aria-hidden>
+          {renderLayout()}
+          {plus && <span className={`text-[0.7em] font-bold leading-none ${plusClass}`}>+</span>}
+        </span>
+      );
+    };
+
     function App() {
+      const [lang, setLang] = useState(getStoredLang);
       const [gameState, setGameState] = useState('idle'); 
-      const [difficulty, setDifficulty] = useState('Principiante');
+      const [difficulty, setDifficulty] = useState('beginner');
       const [currentChord, setCurrentChord] = useState(null);
+      
+      const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+      const pianoKeys = getPianoKeys(lang);
+      const intervals = INTERVAL_NAMES[lang] || INTERVAL_NAMES.en;
+
+      useEffect(() => {
+        document.documentElement.lang = lang;
+        document.title = t.title;
+        localStorage.setItem('earTrainingLang', lang);
+      }, [lang, t.title]);
+
+      useEffect(() => {
+        if (gameState !== 'playing' || !startTime) return;
+        const id = setInterval(() => setTick(t => t + 1), 200);
+        return () => clearInterval(id);
+      }, [gameState, startTime]);
+
+      useEffect(() => {
+        const updateLayout = () => {
+          const mobile = window.matchMedia('(max-width: 768px)').matches;
+          const portrait = window.innerHeight > window.innerWidth;
+          setIsMobile(mobile);
+          setIsPortrait(portrait);
+          setLayoutSpan(window.innerWidth);
+        };
+
+        updateLayout();
+        window.addEventListener('resize', updateLayout);
+        window.addEventListener('orientationchange', updateLayout);
+        return () => {
+          window.removeEventListener('resize', updateLayout);
+          window.removeEventListener('orientationchange', updateLayout);
+        };
+      }, [isFullscreen]);
+
+      useEffect(() => {
+        document.documentElement.classList.toggle('fullscreen-active', isFullscreen);
+        return () => document.documentElement.classList.remove('fullscreen-active');
+      }, [isFullscreen]);
+
+      useEffect(() => {
+        const onFullscreenChange = () => {
+          if (!document.fullscreenElement) {
+            setIsFullscreen(false);
+          }
+        };
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+      }, []);
+
+      const enterFullscreen = async () => {
+        setIsFullscreen(true);
+        try {
+          await document.documentElement.requestFullscreen?.();
+        } catch (_) { /* fallback to CSS fullscreen */ }
+        try {
+          await screen.orientation?.lock?.('landscape');
+        } catch (_) { /* orientation lock not supported */ }
+      };
+
+      const exitFullscreen = async () => {
+        setIsFullscreen(false);
+        try {
+          screen.orientation?.unlock?.();
+        } catch (_) { /* ignore */ }
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen?.();
+          }
+        } catch (_) { /* ignore */ }
+      };
+
+      const toggleFullscreen = () => {
+        if (isFullscreen) exitFullscreen();
+        else enterFullscreen();
+      };
+
+      const showRotatePrompt = isFullscreen && isPortrait;
+
+      useEffect(() => {
+        if (!isFullscreen || !pianoAreaRef.current) {
+          setPianoAreaHeight(88);
+          return;
+        }
+        const updateHeight = () => {
+          if (pianoAreaRef.current) {
+            setPianoAreaHeight(Math.floor(pianoAreaRef.current.clientHeight));
+          }
+        };
+        updateHeight();
+        const observer = new ResizeObserver(updateHeight);
+        observer.observe(pianoAreaRef.current);
+        window.addEventListener('resize', updateHeight);
+        window.addEventListener('orientationchange', updateHeight);
+        return () => {
+          observer.disconnect();
+          window.removeEventListener('resize', updateHeight);
+          window.removeEventListener('orientationchange', updateHeight);
+        };
+      }, [isFullscreen, gameState, isPortrait]);
       
       // Nuovo Sistema Punteggi: Streak di Stelle e Record
       const [stats, setStats] = useState({
-        'Principiante': { current: 0, best: 0 },
-        'Intermedio': { current: 0, best: 0 },
-        'Avanzato': { current: 0, best: 0 },
-        'Pro': { current: 0, best: 0 },
-        'Jazz': { current: 0, best: 0 }
+        beginner: { current: 0, best: 0 },
+        intermediate: { current: 0, best: 0 },
+        intermediate_plus: { current: 0, best: 0 },
+        advanced: { current: 0, best: 0 },
+        advanced_plus: { current: 0, best: 0 },
+        pro: { current: 0, best: 0 },
+        jazz: { current: 0, best: 0 }
       });
       
       const [replayCount, setReplayCount] = useState(0);
+      const [targetListenCount, setTargetListenCount] = useState(0);
       const [errorCount, setErrorCount] = useState(0);
       const [earnedStarsForRound, setEarnedStarsForRound] = useState(0);
       
@@ -150,26 +1038,63 @@
       
       const [startTime, setStartTime] = useState(null);
       const [timeTaken, setTimeTaken] = useState(null);
+      const [, setTick] = useState(0);
       const [errorStatus, setErrorStatus] = useState(false);
       const [mistakeMade, setMistakeMade] = useState(false);
+      const [isFullscreen, setIsFullscreen] = useState(false);
+      const [isMobile, setIsMobile] = useState(false);
+      const [isPortrait, setIsPortrait] = useState(false);
+      const [layoutSpan, setLayoutSpan] = useState(
+        typeof window !== 'undefined' ? window.innerWidth : 1024
+      );
       
       const audioCtxRef = useRef(null);
-      const pianoRef = useRef(null); // Ref per il container del piano (per i tasti freccia)
+      const pianoRef = useRef(null);
+      const pianoAreaRef = useRef(null);
+      const [pianoAreaHeight, setPianoAreaHeight] = useState(88);
 
       const initAudio = () => {
         if (!audioCtxRef.current) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           const ctx = new AudioContext();
-          
+
+          const masterGain = ctx.createGain();
+          masterGain.gain.value = 0.38;
+
+          const highCut = ctx.createBiquadFilter();
+          highCut.type = 'lowpass';
+          highCut.frequency.value = 4000;
+          highCut.Q.value = 0.35;
+
           const compressor = ctx.createDynamicsCompressor();
-          compressor.threshold.setValueAtTime(-24, ctx.currentTime);
-          compressor.knee.setValueAtTime(30, ctx.currentTime);
-          compressor.ratio.setValueAtTime(12, ctx.currentTime);
-          compressor.attack.setValueAtTime(0.003, ctx.currentTime);
-          compressor.release.setValueAtTime(0.25, ctx.currentTime);
+          compressor.threshold.setValueAtTime(-20, ctx.currentTime);
+          compressor.knee.setValueAtTime(18, ctx.currentTime);
+          compressor.ratio.setValueAtTime(3, ctx.currentTime);
+          compressor.attack.setValueAtTime(0.012, ctx.currentTime);
+          compressor.release.setValueAtTime(0.22, ctx.currentTime);
+
+          const reverbDelay = ctx.createDelay(0.12);
+          reverbDelay.delayTime.value = 0.032;
+          const reverbFeedback = ctx.createGain();
+          reverbFeedback.gain.value = 0.18;
+          const reverbMix = ctx.createGain();
+          reverbMix.gain.value = 0.1;
+
+          const dryMix = ctx.createGain();
+          dryMix.gain.value = 0.9;
+
+          masterGain.connect(dryMix);
+          masterGain.connect(reverbDelay);
+          reverbDelay.connect(reverbFeedback);
+          reverbFeedback.connect(reverbDelay);
+          reverbDelay.connect(reverbMix);
+
+          dryMix.connect(highCut);
+          reverbMix.connect(highCut);
+          highCut.connect(compressor);
           compressor.connect(ctx.destination);
-          
-          ctx.masterCompressor = compressor;
+
+          ctx.masterGain = masterGain;
           audioCtxRef.current = ctx;
         }
         if (audioCtxRef.current.state === 'suspended') {
@@ -180,82 +1105,98 @@
       const playTone = (frequency, duration = 2.5, volume = 0.5, startTimeOffset = 0) => {
         if (!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
-        const startTime = ctx.currentTime + startTimeOffset;
-        
-        const masterGain = ctx.createGain();
-        masterGain.connect(ctx.masterCompressor || ctx.destination);
-        
-        const safeVolume = volume * 0.4;
-        
-        masterGain.gain.setValueAtTime(0, startTime);
-        masterGain.gain.linearRampToValueAtTime(safeVolume, startTime + 0.02);
-        masterGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        
+        const t0 = ctx.currentTime + startTimeOffset;
+        const tone = getNoteToneProfile(frequency);
+
+        const noteGain = ctx.createGain();
+        noteGain.connect(ctx.masterGain);
+
+        const peak = volume * 0.5 * tone.volumeScale;
+        const body = peak * 0.4;
+        noteGain.gain.setValueAtTime(0.001, t0);
+        noteGain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.001), t0 + 0.006);
+        noteGain.gain.exponentialRampToValueAtTime(Math.max(body, 0.001), t0 + 0.2);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.Q.value = 1;
-        filter.frequency.setValueAtTime(frequency * 3 + 1000, startTime);
-        filter.frequency.exponentialRampToValueAtTime(frequency + 200, startTime + 0.2);
-        filter.connect(masterGain);
-        
-        const osc1 = ctx.createOscillator();
-        osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(frequency, startTime);
-        osc1.connect(filter);
-        osc1.start(startTime);
-        osc1.stop(startTime + duration);
-        
-        const osc2 = ctx.createOscillator();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(frequency * 2, startTime);
-        const gain2 = ctx.createGain();
-        gain2.gain.value = 0.3;
-        osc2.connect(gain2);
-        gain2.connect(filter);
-        osc2.start(startTime);
-        osc2.stop(startTime + duration);
-        
-        const osc3 = ctx.createOscillator();
-        osc3.type = 'sine';
-        osc3.frequency.setValueAtTime(frequency * 3, startTime);
-        const gain3 = ctx.createGain();
-        gain3.gain.value = 0.1;
-        osc3.connect(gain3);
-        gain3.connect(filter);
-        osc3.start(startTime);
-        osc3.stop(startTime + duration);
+        filter.Q.value = 0.45;
+        filter.frequency.setValueAtTime(tone.brightFreq, t0);
+        filter.frequency.exponentialRampToValueAtTime(Math.max(tone.darkFreq, 80), t0 + 0.55);
+
+        const output = ctx.createGain();
+        output.connect(noteGain);
+
+        if (tone.highShelfGain < -0.5) {
+          const highShelf = ctx.createBiquadFilter();
+          highShelf.type = 'highshelf';
+          highShelf.frequency.value = Math.min(2200, frequency * 2.2);
+          highShelf.gain.value = Math.max(tone.highShelfGain, -10);
+          filter.connect(highShelf);
+          highShelf.connect(output);
+        } else {
+          filter.connect(output);
+        }
+
+        PIANO_HARMONICS.forEach(({ ratio, gain }) => {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(frequency * ratio, t0);
+          const harmonicGain = ctx.createGain();
+          harmonicGain.gain.value = gain * tone.harmonicScale(ratio) * (ratio === 2 && frequency > 480 ? 1.3 : 1);
+          osc.connect(harmonicGain);
+          harmonicGain.connect(filter);
+          osc.start(t0);
+          osc.stop(t0 + duration + 0.08);
+        });
       };
 
-      const playTargetChord = () => {
-        initAudio();
-        if (currentChord) {
-          currentChord.notes.forEach(noteId => {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4);
+      const playTargetNotes = (notes) => {
+        const chordVol = 0.34 / Math.sqrt(notes.length);
+        if (isIntervalArpeggio(difficulty) || isChordArpeggio(difficulty)) {
+          notes.forEach((noteId, i) => {
+            playTone(FREQUENCIES[noteId], 2.4, chordVol, i * 0.55);
+          });
+        } else {
+          notes.forEach(noteId => {
+            playTone(FREQUENCIES[noteId], 2.4, chordVol);
           });
         }
       };
 
+      const playTargetChord = (countListen = true) => {
+        if (countListen && gameState === 'playing' && usesTargetListenPenalty(difficulty)) {
+          setTargetListenCount(prev => prev + 1);
+        }
+        initAudio();
+        if (currentChord) {
+          playTargetNotes(currentChord.notes);
+        }
+      };
+
       const playUserChord = () => {
-        if (gameState === 'playing') {
+        if (gameState === 'playing' && !usesTargetListenPenalty(difficulty)) {
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
+        const userVol = 0.34 / Math.sqrt(Math.max(1, selectedNotes.filter(n => n !== null).length));
         selectedNotes.forEach(noteId => {
           if (noteId) {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4);
+            playTone(FREQUENCIES[noteId], 2.4, userVol);
           }
         });
       };
 
       const playUserArpeggio = () => {
-        if (gameState === 'playing') {
+        if (gameState === 'playing' && !usesTargetListenPenalty(difficulty)) {
           setReplayCount(prev => prev + 1); 
         }
         initAudio();
+        const userVol = 0.34 / Math.sqrt(Math.max(1, selectedNotes.filter(n => n !== null).length));
         let delayIndex = 0;
         selectedNotes.forEach(noteId => {
           if (noteId) {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4, delayIndex * 0.5);
+            playTone(FREQUENCIES[noteId], 2.4, userVol, delayIndex * 0.5);
             delayIndex++;
           }
         });
@@ -276,22 +1217,22 @@
         let initialActiveBox = 0;
 
         // Generazione Dinamica
-        if (difficulty === 'Principiante') {
-          const randomKey = PIANO_KEYS[Math.floor(Math.random() * PIANO_KEYS.length)];
-          targetChord = { name: `Nota ${randomKey.label}`, notes: [randomKey.id] };
+        if (difficulty === 'beginner') {
+          const randomKey = pianoKeys[Math.floor(Math.random() * pianoKeys.length)];
+          targetChord = { name: `${t.note} ${randomKey.label}`, notes: [randomKey.id] };
           initialSelectedNotes = [null];
           
-        } else if (difficulty === 'Intermedio') {
+        } else if (isIntervalLevel(difficulty)) {
           // Genera un intervallo (1-12 semitoni)
-          const baseIndex = Math.floor(Math.random() * (PIANO_KEYS.length - 12));
+          const baseIndex = Math.floor(Math.random() * (pianoKeys.length - 12));
           const intervalDistance = Math.floor(Math.random() * 12) + 1;
           const targetIndex = baseIndex + intervalDistance;
           
-          const baseKey = PIANO_KEYS[baseIndex];
-          const targetKey = PIANO_KEYS[targetIndex];
+          const baseKey = pianoKeys[baseIndex];
+          const targetKey = pianoKeys[targetIndex];
           
           targetChord = { 
-            name: `Intervallo: ${INTERVAL_NAMES[intervalDistance]}`, 
+            name: `${t.interval}: ${intervals[intervalDistance]}`, 
             notes: [baseKey.id, targetKey.id] 
           };
           initialSelectedNotes = [baseKey.id, null]; // Regala la prima nota
@@ -299,10 +1240,12 @@
           
         } else {
           // Selezione da dizionario (Avanzato, Pro, Jazz)
-          const chordsList = CHORD_CATEGORIES[difficulty];
+          const chordsList = CHORD_CATEGORIES[getChordCategoryKey(difficulty)];
+          let selectedChord;
           do {
-            targetChord = chordsList[Math.floor(Math.random() * chordsList.length)];
-          } while (currentChord && targetChord.name === currentChord.name && chordsList.length > 1);
+            selectedChord = chordsList[Math.floor(Math.random() * chordsList.length)];
+          } while (currentChord && getChordKey(selectedChord) === getChordKey(currentChord) && chordsList.length > 1);
+          targetChord = { ...selectedChord, name: getChordDisplayName(selectedChord, lang) };
           initialSelectedNotes = new Array(targetChord.notes.length).fill(null);
         }
 
@@ -315,14 +1258,13 @@
         
         setErrorStatus(false);
         setReplayCount(0);
+        setTargetListenCount(0);
         setErrorCount(0);
         setEarnedStarsForRound(0);
         setMistakeMade(false);
         
         setTimeout(() => {
-          targetChord.notes.forEach(noteId => {
-            playTone(FREQUENCIES[noteId], 2.0, 0.4);
-          });
+          playTargetNotes(targetChord.notes);
         }, 100);
       };
 
@@ -330,7 +1272,7 @@
         if (gameState !== 'playing' || activeBoxIndex === null) return;
         
         initAudio();
-        playTone(FREQUENCIES[noteId], 1.0, 0.6);
+        playTone(FREQUENCIES[noteId], 0.7, 0.38);
         setErrorStatus(false);
         
         setSelectedNotes(prev => {
@@ -343,15 +1285,28 @@
       const selectBox = (index) => {
         if (gameState === 'playing') {
           // Blocca la selezione del primo box se siamo in modalità Intermedio (è regalato)
-          if (difficulty === 'Intermedio' && index === 0) return;
+                if (isIntervalLevel(difficulty) && index === 0) return;
           setActiveBoxIndex(index);
         }
       };
 
-      const calculatePotentialStars = () => {
-        // Principiante assegna solo 1 stella (se corretta)
-        if (difficulty === 'Principiante') {
-          return errorCount === 0 ? 1 : 0;
+      const getElapsedSeconds = () => startTime ? (Date.now() - startTime) / 1000 : 0;
+
+      const calculatePotentialStars = (elapsedSeconds = null) => {
+        if (difficulty === 'beginner') {
+          const elapsed = elapsedSeconds ?? getElapsedSeconds();
+          let baseStars = 1;
+          if (elapsed < 2) baseStars = 3;
+          else if (elapsed <= 5) baseStars = 2;
+          return Math.max(0, baseStars - targetListenCount - errorCount);
+        }
+
+        if (isIntervalLevel(difficulty)) {
+          const elapsed = elapsedSeconds ?? getElapsedSeconds();
+          let baseStars = 1;
+          if (elapsed <= 5) baseStars = 3;
+          else if (elapsed <= 10) baseStars = 2;
+          return Math.max(0, baseStars - targetListenCount - errorCount);
         }
 
         let baseStars = 3;
@@ -373,13 +1328,12 @@
           sortedTarget.every((val, index) => val === sortedSelected[index]);
           
         if (isCorrect) {
-          const endTime = Date.now();
-          setTimeTaken(((endTime - startTime) / 1000).toFixed(1));
+          const elapsed = (Date.now() - startTime) / 1000;
+          const earned = calculatePotentialStars(elapsed);
+          setTimeTaken(elapsed.toFixed(1));
           setGameState('won');
-          playTargetChord();
-
-          const earned = calculatePotentialStars();
           setEarnedStarsForRound(earned);
+          playTargetChord(false);
 
           setStats(prev => {
             const currentDiffStats = prev[difficulty];
@@ -420,41 +1374,53 @@
 
       const renderPiano = () => {
         let whiteKeyIndex = 0;
-        const WHITE_KEY_WIDTH = 56;
-        const BLACK_KEY_WIDTH = 32;
+        const WHITE_KEY_WIDTH = isFullscreen
+          ? Math.max(36, Math.floor((layoutSpan - 24) / 14))
+          : 56;
+        const BLACK_KEY_WIDTH = Math.round(WHITE_KEY_WIDTH * (32 / 56));
+        const WHITE_KEY_HEIGHT = isFullscreen
+          ? Math.max(72, pianoAreaHeight)
+          : 256;
+        const BLACK_KEY_HEIGHT = isFullscreen
+          ? Math.round(WHITE_KEY_HEIGHT * 0.625)
+          : 160;
+        const pianoWidth = 14 * WHITE_KEY_WIDTH;
         
         return (
-          <div className="flex flex-col gap-3 w-full max-w-full">
+          <div className={`flex flex-col w-full max-w-full ${isFullscreen ? 'h-full min-h-0 justify-end' : 'gap-3'}`}>
             
-            {/* Barra di controllo scorrimento (Sopra la tastiera) */}
-            <div className="flex justify-between items-center px-1">
-              <span className="text-xs text-slate-500 font-medium uppercase tracking-wider ml-1">Tastiera (Scorri per esplorare)</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => scrollPiano('left')}
-                  className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
-                  title="Scorri a sinistra"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={() => scrollPiano('right')}
-                  className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
-                  title="Scorri a destra"
-                >
-                  <ChevronRight size={20} />
-                </button>
+            {!isFullscreen && (
+              <div className="flex justify-between items-center px-1">
+                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider ml-1">{t.keyboardScroll}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => scrollPiano('left')}
+                    className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
+                    title={t.scrollLeft}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => scrollPiano('right')}
+                    className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 p-2 rounded-lg transition-colors border border-slate-600 shadow-sm"
+                    title={t.scrollRight}
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Container Tastiera */}
-            <div className="relative w-full max-w-full rounded-b-xl border-b border-slate-800">
+            <div className={`relative w-full ${isFullscreen ? 'h-full flex justify-center items-end' : 'max-w-full rounded-b-xl border-b border-slate-800'}`}>
               <div
                 ref={pianoRef}
-                className="w-full overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x"
+                className={`w-full ${isFullscreen ? 'h-full overflow-hidden flex justify-center items-end' : 'overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-800 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 [&::-webkit-scrollbar-thumb]:rounded-md scroll-smooth touch-pan-x'}`}
               >
-                <div className="relative h-64 mx-auto select-none" style={{ width: `${14 * WHITE_KEY_WIDTH}px` }}>
-                  {PIANO_KEYS.map((key) => {
+                <div
+                  className="piano-keys relative mx-auto select-none"
+                  style={{ width: `${pianoWidth}px`, height: `${WHITE_KEY_HEIGHT}px` }}
+                >
+                  {pianoKeys.map((key) => {
                     const isWhite = key.type === 'white';
                     const isSelected = selectedNotes.includes(key.id); 
                     
@@ -470,14 +1436,21 @@
                       <div
                         key={key.id}
                         onClick={() => assignNoteToActiveBox(key.id)}
-                        className={`absolute cursor-pointer border flex flex-col justify-end pb-4 items-center transition-colors duration-150 select-none touch-pan-x
-                          ${isWhite 
-                            ? `h-64 w-[56px] rounded-b-lg border-slate-300 z-0 active:bg-slate-200 ${isSelected ? 'bg-indigo-200' : 'bg-white hover:bg-slate-100'}` 
-                            : `h-40 w-[32px] rounded-b-md border-black z-10 active:bg-slate-600 ${isSelected ? 'bg-indigo-600' : 'bg-slate-900 hover:bg-slate-700'}`
-                          }`}
-                        style={{ left: `${leftPosition}px` }}
+                        role="button"
+                        className={`piano-key absolute cursor-pointer border flex flex-col justify-end items-center select-none touch-manipulation
+                          ${isWhite ? 'piano-key--white rounded-b-lg z-0' : 'piano-key--black rounded-b-md z-10'}
+                          ${isSelected ? 'piano-key--selected' : ''}`}
+                        style={{
+                          left: `${leftPosition}px`,
+                          width: `${isWhite ? WHITE_KEY_WIDTH : BLACK_KEY_WIDTH}px`,
+                          height: `${isWhite ? WHITE_KEY_HEIGHT : BLACK_KEY_HEIGHT}px`,
+                          paddingBottom: isFullscreen ? '6px' : '16px',
+                        }}
                       >
-                        <span className={`text-xs font-semibold pointer-events-none ${isWhite ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <span
+                          className="font-semibold pointer-events-none piano-key-label"
+                          style={{ fontSize: isFullscreen ? Math.max(9, Math.min(12, WHITE_KEY_HEIGHT * 0.1)) + 'px' : '12px' }}
+                        >
                           {isWhite && key.label}
                         </span>
                       </div>
@@ -494,234 +1467,395 @@
       const isReadyToSubmit = selectedNotes.length > 0 && selectedNotes.every(note => note !== null);
       const currentStarsPotential = calculatePotentialStars();
 
+      const fullscreenBtn = (compact = false) => (
+        <button
+          onClick={toggleFullscreen}
+          className={`flex items-center gap-2 rounded-xl font-semibold transition-colors shrink-0 ${
+            compact
+              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1.5 border border-slate-600'
+              : 'bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 text-sm shadow-md shadow-indigo-500/30'
+          }`}
+          title={isFullscreen ? t.exitFullscreen : t.fullscreen}
+          aria-label={isFullscreen ? t.exitFullscreen : t.fullscreen}
+        >
+          {isFullscreen ? <Minimize2 size={compact ? 16 : 18} /> : <Maximize2 size={compact ? 16 : 18} />}
+          {(!compact || isFullscreen) && (
+            <span className={compact ? 'text-[10px] leading-tight' : ''}>
+              {isFullscreen ? t.exitFullscreen : t.fullscreen}
+            </span>
+          )}
+        </button>
+      );
+
+      const statsBlock = (compact = false) => (
+        <div className={`flex items-center bg-slate-800/80 rounded-2xl border border-slate-700 shrink-0 justify-center ${
+          compact ? 'gap-2 px-2 py-1' : 'gap-4 px-4 py-2.5'
+        }`}>
+          <div className="flex items-center gap-1 text-orange-400" title={t.currentStreak}>
+            <Flame size={compact ? 14 : 20} className={stats[difficulty].current > 0 && gameState === 'playing' ? "animate-pulse" : ""} />
+            <span className={`font-bold leading-none ${compact ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].current}</span>
+            <Star size={compact ? 10 : 14} className="fill-orange-400 opacity-80" />
+          </div>
+          <div className={`w-px bg-slate-600 ${compact ? 'h-4' : 'h-6'}`}></div>
+          <div className="flex items-center gap-1 text-amber-400" title={t.bestStreak}>
+            <Trophy size={compact ? 14 : 20} />
+            <span className={`font-bold leading-none ${compact ? 'text-sm' : 'text-lg'}`}>{stats[difficulty].best}</span>
+            <Star size={compact ? 10 : 14} className="fill-amber-400 opacity-80" />
+          </div>
+        </div>
+      );
+
+      const langSelector = () => (
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          aria-label={t.language}
+          className="bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg px-2 py-1.5 pr-7 appearance-none cursor-pointer hover:bg-slate-700 transition-colors shrink-0"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center' }}
+        >
+          {LANGUAGES.map(l => (
+            <option key={l.code} value={l.code}>{l.label}</option>
+          ))}
+        </select>
+      );
+
+      const starsInfoBox = (compact = false) => (
+        <div className={`bg-slate-800/60 border border-slate-700 rounded-xl text-left w-full ${
+          compact ? 'p-3 max-w-sm' : 'p-4 max-w-md'
+        }`}>
+          <div className="flex items-center gap-2 mb-2">
+            <Star size={compact ? 14 : 18} className="text-amber-400 fill-amber-400 shrink-0" />
+            <h3 className={`font-bold text-slate-200 ${compact ? 'text-xs' : 'text-sm'}`}>{t.starsTitle}</h3>
+            <span className={`text-indigo-400 font-semibold ml-auto flex items-center gap-1.5 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+              <DifficultyStars diff={difficulty} size={compact ? 10 : 12} />
+              <span className="hidden sm:inline">{t.difficulties[difficulty]}</span>
+            </span>
+          </div>
+          <ul className={compact ? 'space-y-1' : 'space-y-1.5'}>
+            {(t.starRules[difficulty] || []).map((line, i) => (
+              <li key={i} className={`text-slate-400 flex gap-2 leading-snug ${compact ? 'text-[10px]' : 'text-xs'}`}>
+                <span className="text-amber-400/60 shrink-0">•</span>
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+
+      const difficultySelector = (compact = false) => (
+        <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-1.5'}`}>
+          {DIFFICULTIES.map(diff => (
+            <button
+              key={diff}
+              type="button"
+              onClick={() => handleDifficultyChange(diff)}
+              title={t.difficulties[diff]}
+              aria-label={t.difficulties[diff]}
+              className={`rounded-lg font-semibold transition-all flex items-center justify-center shrink-0 ${
+                compact ? 'h-8 px-1.5' : 'h-10 px-2'
+              }
+                ${difficulty === diff 
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400/40 scale-105' 
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+            >
+              <DifficultyStars diff={diff} size={compact ? 9 : 11} selected={difficulty === diff} />
+            </button>
+          ))}
+        </div>
+      );
+
+      if (showRotatePrompt) {
+        return (
+          <div className="fixed inset-0 z-[100] bg-slate-900 text-slate-100 font-sans flex flex-col items-center justify-center p-8 text-center gap-6">
+            <div className="relative">
+              <Smartphone size={72} className="text-indigo-400" />
+              <RotateCw size={32} className="absolute -right-4 -top-4 text-amber-400 animate-spin" style={{ animationDuration: '3s' }} />
+            </div>
+            <p className="text-xl text-slate-200 max-w-sm leading-relaxed font-medium">{t.rotateDevice}</p>
+            <button
+              onClick={exitFullscreen}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/30"
+            >
+              <Minimize2 size={20} />
+              {t.exitFullscreen}
+            </button>
+          </div>
+        );
+      }
+
       return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4 font-sans">
-          <div className="max-w-4xl w-full bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-700">
+        <div
+          className={`bg-slate-900 text-slate-100 font-sans ${
+            isFullscreen
+              ? 'fixed inset-0 z-50 overflow-hidden flex flex-col'
+              : isMobile
+                ? 'min-h-screen min-h-[100dvh] flex flex-col'
+                : 'min-h-screen flex items-center justify-center p-4'
+          }`}
+        >
+          <div className={`w-full flex flex-col flex-1 min-h-0 ${
+            isFullscreen
+              ? 'h-full bg-slate-900'
+              : isMobile
+                ? 'min-h-screen min-h-[100dvh] bg-slate-900'
+                : 'max-w-4xl bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-700'
+          }`}>
             
             {/* Header App */}
-            <div className="bg-slate-900/50 p-6 border-b border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                  <Volume2 size={24} />
+            {isMobile && !isFullscreen ? (
+              <div className="bg-slate-900 border-b border-slate-700 p-3 space-y-3 shrink-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                      <Volume2 size={20} />
+                    </div>
+                    <h1 className="text-lg font-bold truncate">{t.appName}</h1>
+                  </div>
+                  {fullscreenBtn(false)}
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold">Ear Training</h1>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {Object.keys(stats).map(diff => (
-                      <button
-                        key={diff}
-                        onClick={() => handleDifficultyChange(diff)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors
-                          ${difficulty === diff 
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' 
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                          }`}
-                      >
-                        {diff}
-                      </button>
-                    ))}
+                <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
+                  {difficultySelector(false)}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  {langSelector()}
+                  {statsBlock(false)}
+                </div>
+              </div>
+            ) : (
+            <div className={`bg-slate-900/50 border-b border-slate-700 flex items-center justify-between gap-2 shrink-0 ${
+              isFullscreen ? 'p-2' : 'p-6 flex-col md:flex-row gap-4'
+            }`}>
+              <div className={`flex items-center gap-2 ${isFullscreen ? 'min-w-0 flex-1' : 'gap-3 w-full md:w-auto'}`}>
+                {!isFullscreen && (
+                  <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                    <Volume2 size={24} />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  {!isFullscreen && <h1 className="text-xl font-bold">{t.appName}</h1>}
+                  <div className={`${isFullscreen ? '' : 'mt-2'}`}>
+                    {difficultySelector(isFullscreen)}
                   </div>
                 </div>
               </div>
               
-              {/* Display Stats: Streak di Stelle & Record */}
-              <div className="flex items-center gap-4 bg-slate-800/80 px-4 py-2.5 rounded-2xl border border-slate-700 shrink-0 w-full md:w-auto justify-center">
-                <div className="flex items-center gap-1.5 text-orange-400" title="Streak Attuale (in Stelle)">
-                  <Flame size={20} className={stats[difficulty].current > 0 && gameState === 'playing' ? "animate-pulse" : ""} />
-                  <span className="font-bold text-lg leading-none">{stats[difficulty].current}</span>
-                  <Star size={14} className="fill-orange-400 opacity-80" />
-                </div>
-                <div className="w-px h-6 bg-slate-600"></div>
-                <div className="flex items-center gap-1.5 text-amber-400" title="Record Streak (in Stelle)">
-                  <Trophy size={20} />
-                  <span className="font-bold text-lg leading-none">{stats[difficulty].best}</span>
-                  <Star size={14} className="fill-amber-400 opacity-80" />
-                </div>
+              <div className={`flex items-center shrink-0 ${isFullscreen ? 'gap-1.5' : 'gap-3 w-full md:w-auto justify-center md:justify-end'}`}>
+                {isFullscreen && fullscreenBtn(true)}
+                {!isFullscreen && langSelector()}
+                {statsBlock(isFullscreen)}
               </div>
             </div>
+            )}
 
             {/* Area di Gioco */}
-            <div className="p-8">
+            <div className={`flex-1 min-h-0 flex flex-col ${
+              isFullscreen ? 'p-2 overflow-hidden' : isMobile ? 'p-4 overflow-y-auto' : 'p-8'
+            }`}>
               {gameState === 'idle' ? (
-                <div className="text-center py-10">
-                  <div className="w-24 h-24 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Play size={48} className="text-indigo-400 ml-2" />
+                <div className={`flex flex-col items-center justify-center flex-1 ${isFullscreen ? 'py-4 gap-3' : 'py-6 md:py-10 gap-6'}`}>
+                  <div className="text-center">
+                    <div className={`bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 ${isFullscreen ? 'w-14 h-14' : 'w-24 h-24 mb-6'}`}>
+                      <Play size={isFullscreen ? 28 : 48} className="text-indigo-400 ml-1" />
+                    </div>
+                    <h2 className={`font-bold mb-2 flex flex-col items-center justify-center gap-2 ${isFullscreen ? 'text-lg' : 'text-3xl'}`}>
+                      <DifficultyStars diff={difficulty} size={isFullscreen ? 18 : 24} />
+                      <span>{t.level} {t.difficulties[difficulty]}</span>
+                    </h2>
+                    {!isFullscreen && (
+                      <p className="text-slate-400 max-w-md mx-auto">
+                        {t.descriptions[difficulty]}
+                      </p>
+                    )}
                   </div>
-                  <h2 className="text-3xl font-bold mb-2">Livello {difficulty}</h2>
-                  <p className="text-slate-400 max-w-md mx-auto mb-8">
-                    {difficulty === 'Principiante' && "Allena l'orecchio relativo e assoluto indovinando una singola nota generata casualmente."}
-                    {difficulty === 'Intermedio' && "Riconosci la distanza (intervallo) tra due note. Il sistema ti regala la nota di partenza!"}
-                    {difficulty === 'Avanzato' && "Accordi maggiori e minori (3 note). Le fondamenta dell'armonia."}
-                    {difficulty === 'Pro' && "Accordi sospesi (sus), diminuiti e aumentati (3 note). Tensione e risoluzione."}
-                    {difficulty === 'Jazz' && "Accordi complessi (settime, none, alterati, ecc). Per veri musicisti."}
-                  </p>
+
+                  {starsInfoBox(isFullscreen)}
+
                   <button 
                     onClick={startGame}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-3 mx-auto"
+                    className={`bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2 ${
+                      isFullscreen ? 'px-5 py-2.5 text-sm' : 'px-8 py-4 text-lg gap-3'
+                    }`}
                   >
-                    <Play size={24} />
-                    Inizia il Gioco
+                    <Play size={isFullscreen ? 18 : 24} />
+                    {t.startGame}
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-8">
+                <div className={`flex flex-col flex-1 min-h-0 ${isFullscreen ? 'gap-2' : 'gap-8'}`}>
                   
                   {/* Controlli Superiori */}
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-slate-700/30 p-6 rounded-2xl border border-slate-700">
+                  <div className={`flex bg-slate-700/30 rounded-2xl border border-slate-700 shrink-0 ${
+                    isFullscreen
+                      ? 'flex-row items-center justify-between gap-2 p-2'
+                      : 'flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6'
+                  }`}>
                     
-                    {/* Riascolta Originale (Senza penalità) */}
                     <button 
                       onClick={playTargetChord}
-                      className="flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-6 py-4 rounded-xl font-bold transition-colors w-full md:w-auto justify-center group shadow-md"
+                      className={`flex items-center bg-slate-700 hover:bg-slate-600 rounded-xl font-bold transition-colors group shadow-md ${
+                        isFullscreen
+                          ? 'gap-2 px-3 py-2 text-xs shrink-0'
+                          : 'gap-3 px-6 py-4 w-full md:w-auto justify-center'
+                      }`}
                     >
-                      <Volume2 className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                      <Volume2 size={isFullscreen ? 16 : 24} className="text-indigo-400 group-hover:scale-110 transition-transform shrink-0" />
                       <div className="text-left">
                         <div className="leading-tight">
-                          {difficulty === 'Principiante' ? 'La Nota da' : difficulty === 'Intermedio' ? "L'Intervallo da" : 'Accordo da'}
+                          {difficulty === 'beginner' ? t.theNote : isIntervalLevel(difficulty) ? t.theInterval : t.theChord}
                         </div>
-                        <div className="text-sm text-slate-400 font-normal">Indovinare</div>
+                        {!isFullscreen && <div className="text-sm text-slate-400 font-normal">{t.guess}</div>}
                       </div>
                     </button>
 
-                    {/* Box delle Note e Ascolto Utente */}
-                    <div className="flex flex-col items-center md:items-end w-full md:w-auto gap-4">
-                      <div className="flex flex-col items-center md:items-end">
+                    <div className={`flex items-center ${isFullscreen ? 'gap-2 flex-1 justify-center min-w-0' : 'flex-col md:items-end w-full md:w-auto gap-4'}`}>
+                      {!isFullscreen && (
                         <p className="text-sm text-slate-400 mb-2 font-medium">
-                           {difficulty === 'Principiante' ? "Trova la nota" : difficulty === 'Intermedio' ? "Completa l'intervallo" : "Componi l'accordo"}
+                          {difficulty === 'beginner' ? t.findNote : isIntervalLevel(difficulty) ? t.completeInterval : t.composeChord}
                         </p>
-                        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
-                          {selectedNotes.map((noteId, i) => {
-                            const keyInfo = PIANO_KEYS.find(k => k.id === noteId);
-                            const isActive = activeBoxIndex === i && gameState === 'playing';
-                            const isLocked = difficulty === 'Intermedio' && i === 0; // Il box regalato
-                            
-                            return (
-                              <div 
-                                key={i}
-                                onClick={() => selectBox(i)}
-                                className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold transition-all 
-                                  ${isLocked 
-                                    ? 'border-slate-500 bg-slate-700/50 cursor-not-allowed opacity-80' 
-                                    : isActive 
-                                      ? 'border-amber-400 ring-4 ring-amber-400/20 scale-105 cursor-pointer' 
-                                      : 'border-slate-600 hover:border-slate-400 cursor-pointer'
-                                  }
-                                  ${noteId && !isLocked
-                                    ? 'bg-indigo-600/20 text-indigo-300 shadow-inner' 
-                                    : noteId && isLocked 
-                                      ? 'text-slate-300' 
-                                      : 'bg-slate-800/80 text-transparent'
-                                  }
-                                `}
-                              >
-                                {keyInfo ? keyInfo.label : ''}
-                              </div>
-                            );
-                          })}
-                        </div>
+                      )}
+                      <div className={`flex flex-wrap justify-center ${isFullscreen ? 'gap-1' : 'gap-2 sm:gap-3'}`}>
+                        {selectedNotes.map((noteId, i) => {
+                          const keyInfo = pianoKeys.find(k => k.id === noteId);
+                          const isActive = activeBoxIndex === i && gameState === 'playing';
+                          const isLocked = isIntervalLevel(difficulty) && i === 0;
+                          
+                          return (
+                            <div 
+                              key={i}
+                              onClick={() => selectBox(i)}
+                              className={`border-2 rounded-xl flex items-center justify-center font-bold transition-all 
+                                ${isFullscreen ? 'w-9 h-9 text-sm' : 'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-lg sm:text-xl'}
+                                ${isLocked 
+                                  ? 'border-slate-500 bg-slate-700/50 cursor-not-allowed opacity-80' 
+                                  : isActive 
+                                    ? 'border-amber-400 ring-4 ring-amber-400/20 scale-105 cursor-pointer' 
+                                    : 'border-slate-600 hover:border-slate-400 cursor-pointer'
+                                }
+                                ${noteId && !isLocked
+                                  ? 'bg-indigo-600/20 text-indigo-300 shadow-inner' 
+                                  : noteId && isLocked 
+                                    ? 'text-slate-300' 
+                                    : 'bg-slate-800/80 text-transparent'
+                                }
+                              `}
+                            >
+                              {keyInfo ? keyInfo.label : ''}
+                            </div>
+                          );
+                        })}
                       </div>
-                      
-                      {/* Pulsanti per ascoltare le note correntemente selezionate */}
-                      <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-2 md:mt-0">
-                        <button 
-                          onClick={playUserChord}
-                          disabled={!selectedNotes.some(n => n !== null)}
-                          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
-                            ${selectedNotes.some(n => n !== null) 
-                              ? 'bg-slate-600 hover:bg-slate-500 text-white' 
-                              : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
-                            }`}
-                          title="Suona tutte le note insieme"
-                        >
-                          <Music size={16} className={selectedNotes.some(n => n !== null) ? 'text-amber-400' : ''} />
-                          {difficulty === 'Principiante' ? 'Riproduci' : difficulty === 'Intermedio' ? 'Armonico' : 'Accordo'}
-                        </button>
-                        {difficulty !== 'Principiante' && (
+
+                      {!isFullscreen && (
+                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-2 md:mt-0">
                           <button 
-                            onClick={playUserArpeggio}
+                            onClick={playUserChord}
                             disabled={!selectedNotes.some(n => n !== null)}
                             className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
                               ${selectedNotes.some(n => n !== null) 
                                 ? 'bg-slate-600 hover:bg-slate-500 text-white' 
                                 : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
                               }`}
-                            title="Suona le note una per una"
+                            title={t.playTogether}
                           >
-                            <Play size={16} className={selectedNotes.some(n => n !== null) ? 'text-emerald-400' : ''} />
-                            {difficulty === 'Intermedio' ? 'Melodico' : 'Arpeggio'}
+                            <Music size={16} className={selectedNotes.some(n => n !== null) ? 'text-amber-400' : ''} />
+                            {difficulty === 'beginner' ? t.replay : isIntervalLevel(difficulty) ? t.harmonic : t.chord}
                           </button>
-                        )}
-                      </div>
+                          {difficulty !== 'beginner' && (
+                            <button 
+                              onClick={playUserArpeggio}
+                              disabled={!selectedNotes.some(n => n !== null)}
+                              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all w-full sm:w-auto
+                                ${selectedNotes.some(n => n !== null) 
+                                  ? 'bg-slate-600 hover:bg-slate-500 text-white' 
+                                  : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
+                                }`}
+                              title={t.playOneByOne}
+                            >
+                              <Play size={16} className={selectedNotes.some(n => n !== null) ? 'text-emerald-400' : ''} />
+                              {isIntervalLevel(difficulty) ? t.melodic : t.arpeggio}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Area Messaggi e Invia */}
-                  <div className="flex flex-col items-center justify-center h-28">
+                  <div className={`flex flex-col items-center justify-center shrink-0 ${isFullscreen ? 'h-14' : 'h-28'}`}>
                     {gameState === 'playing' ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-400">
-                          Stelle in palio: 
+                      <div className={`flex items-center ${isFullscreen ? 'flex-row gap-3' : 'flex-col gap-3'}`}>
+                        <div className={`flex items-center gap-2 font-semibold text-slate-400 ${isFullscreen ? 'text-xs' : 'text-sm'}`}>
+                          {t.starsAtStake}
                           <div className="flex gap-1">
-                            {[...Array(difficulty === 'Principiante' ? 1 : 3)].map((_, i) => (
+                            {[...Array(3)].map((_, i) => (
                               <Star 
                                 key={i} 
-                                size={18} 
+                                size={isFullscreen ? 14 : 18} 
                                 className={`transition-all duration-300 ${i < currentStarsPotential ? "text-amber-400 fill-amber-400" : "text-slate-600"}`} 
                               />
                             ))}
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className={`flex items-center ${isFullscreen ? 'gap-2' : 'flex-col sm:flex-row gap-4'}`}>
                           <button
                             onClick={checkAnswer}
                             disabled={!isReadyToSubmit}
-                            className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-lg transition-all
+                            className={`flex items-center gap-2 rounded-xl font-bold transition-all ${
+                              isFullscreen ? 'px-4 py-2 text-sm' : 'px-8 py-3 text-lg'
+                            }
                               ${isReadyToSubmit
                                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30'
                                 : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                               }`}
                           >
-                            <Check size={24} />
-                            Invia Risposta
+                            <Check size={isFullscreen ? 18 : 24} />
+                            {t.submit}
                           </button>
                           {errorStatus && (
-                            <span className="text-rose-400 flex items-center gap-2 font-medium animate-pulse">
-                              <AlertCircle size={20} />
-                              -1 Stella!
+                            <span className={`text-rose-400 flex items-center gap-1 font-medium animate-pulse ${isFullscreen ? 'text-xs' : 'text-sm gap-2'}`}>
+                              <AlertCircle size={isFullscreen ? 16 : 20} />
+                              {t.minusOneStar}
                             </span>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
-                        <div className="text-emerald-400 font-bold text-xl sm:text-2xl flex flex-col items-center gap-2 text-center">
+                      <div className={`flex items-center animate-in fade-in slide-in-from-bottom-4 ${isFullscreen ? 'flex-row gap-3' : 'flex-col gap-4'}`}>
+                        <div className={`text-emerald-400 font-bold flex items-center gap-2 text-center ${isFullscreen ? 'text-sm' : 'text-xl sm:text-2xl flex-col gap-2'}`}>
                           <div className="flex items-center gap-2">
-                            <Check size={32} className="shrink-0" />
-                            Esatto! Era {difficulty === 'Principiante' ? 'il ' : 'un '}{currentChord.name}
+                            <Check size={isFullscreen ? 20 : 32} className="shrink-0" />
+                            <span className={isFullscreen ? 'truncate max-w-[40vw]' : ''}>
+                              {t.exact} {difficulty === 'beginner' ? t.the : t.a} {currentChord.name}
+                            </span>
                           </div>
-                          {earnedStarsForRound > 0 ? (
-                            <div className="flex items-center gap-1 text-amber-400 text-lg">
-                              Hai guadagnato +{earnedStarsForRound} <Star size={20} className="fill-amber-400" />
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-slate-400 text-lg">
-                              Nessuna stella ottenuta, andrà meglio alla prossima!
-                            </div>
+                          {!isFullscreen && (
+                            earnedStarsForRound > 0 ? (
+                              <div className="flex items-center gap-1 text-amber-400 text-lg">
+                                {t.earnedStars.replace('{n}', earnedStarsForRound)} <Star size={20} className="fill-amber-400" />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 text-slate-400 text-lg">
+                                {t.noStars}
+                              </div>
+                            )
                           )}
                         </div>
-                        <div className="flex items-center gap-4">
-                          {timeTaken && (
+                        <div className={`flex items-center ${isFullscreen ? 'gap-2' : 'gap-4'}`}>
+                          {timeTaken && !isFullscreen && (
                             <div className="flex items-center gap-2 bg-slate-800 text-slate-300 px-4 py-3 rounded-xl font-medium border border-slate-700">
                               <Clock size={18} className="text-indigo-400" />
-                              {timeTaken} sec
+                              {timeTaken} {t.sec}
                             </div>
                           )}
                           <button
                             onClick={startGame}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2"
+                            className={`bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2 ${
+                              isFullscreen ? 'px-4 py-2 text-sm' : 'px-6 py-3'
+                            }`}
                           >
-                            <RefreshCw size={20} />
-                            Prossimo
+                            <RefreshCw size={isFullscreen ? 16 : 20} />
+                            {t.next}
                           </button>
                         </div>
                       </div>
@@ -729,7 +1863,12 @@
                   </div>
 
                   {/* Pianoforte Interattivo */}
-                  {renderPiano()}
+                  <div
+                    ref={isFullscreen ? pianoAreaRef : null}
+                    className={isFullscreen ? 'flex-1 min-h-0 w-full flex flex-col' : ''}
+                  >
+                    {renderPiano()}
+                  </div>
 
                 </div>
               )}
